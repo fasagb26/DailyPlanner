@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f6f7f3">
+    <meta name="description" content="A calm, simple planner to organize your day.">
+    <title>Daily Planner</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="planner">
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="Daily Planner home">
+          <span class="brand-mark" aria-hidden="true">✳</span>
+          <span>daylight</span>
+        </a>
+        <span class="saved-status" id="saved-status" role="status">Saved on this device</span>
+      </header>
+
+      <section class="day-heading" aria-labelledby="page-title">
+        <p class="eyebrow">YOUR SPACE TO FOCUS</p>
+        <h1 id="page-title">Make room for <span>today.</span></h1>
+        <div class="date-navigation">
+          <button class="icon-button" id="previous-day" type="button" aria-label="Previous day">←</button>
+          <time id="current-date"></time>
+          <button class="icon-button" id="next-day" type="button" aria-label="Next day">→</button>
+          <button class="today-button" id="today-button" type="button">Today</button>
+        </div>
+      </section>
+
+      <section class="progress-card" aria-label="Daily progress">
+        <div class="progress-copy">
+          <div>
+            <p class="eyebrow">A LITTLE PROGRESS GOES A LONG WAY</p>
+            <p class="progress-count" id="progress-count" aria-live="polite">0 of 0 tasks complete</p>
+          </div>
+          <span class="progress-icon" aria-hidden="true">✦</span>
+        </div>
+        <div class="progress-track" role="progressbar" aria-label="Tasks completed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-track">
+          <span id="progress-bar"></span>
+        </div>
+      </section>
+
+      <section class="tasks-section" aria-labelledby="tasks-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">YOUR PLAN</p>
+            <h2 id="tasks-title">Today’s tasks <span id="task-total">0</span></h2>
+          </div>
+        </div>
+
+        <form class="task-form" id="task-form">
+          <label class="sr-only" for="task-title">Add a task</label>
+          <input id="task-title" name="title" type="text" maxlength="120" placeholder="What would you like to get done?" required>
+          <label class="sr-only" for="task-time">Task time (optional)</label>
+          <input id="task-time" name="time" type="time" aria-label="Task time (optional)">
+          <button class="add-button" type="submit"><span aria-hidden="true">＋</span> Add task</button>
+        </form>
+
+        <ul class="task-list" id="task-list" aria-label="Tasks for this day"></ul>
+        <div class="empty-state" id="empty-state">
+          <span class="empty-icon" aria-hidden="true">☀</span>
+          <p class="empty-title">A fresh start</p>
+          <p>Your day is open. Add a task to get going.</p>
+        </div>
+      </section>
+
+      <footer>
+        <span>One thing at a time.</span>
+        <span>Your plan stays private on this device.</span>
+      </footer>
+    </main>
+  </body>
+</html>
