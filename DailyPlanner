@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Planner Agent</title>
+<style>
+:root{--bg:#f5f3ef;--card:#fff;--ink:#1f2933;--mut:#6b7280;--gold:#c9a227;--red:#c0392b;--grn:#2e7d5b;--blue:#4a6fa5;--line:#e5e1d8}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:#1f2933;color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+header h1{margin:0;font-size:20px}.sub{color:#cbd2d9;font-size:13px}
+nav{display:flex;gap:4px;padding:8px 20px;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{border:0;background:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--mut)}
+nav button.on{background:var(--gold);color:#1f2933;font-weight:600}
+main{max-width:1000px;margin:0 auto;padding:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.brief{background:linear-gradient(135deg,#1f2933,#33475b);color:#fff;border:0}.brief h2{color:var(--gold)}.brief li{margin:4px 0}
+h2{font-size:16px;margin:0 0 12px}h3{font-size:13px;margin:14px 0 8px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.ev{display:flex;gap:12px;padding:10px;border-radius:8px;border-left:4px solid #cbd2d9;background:#fafaf8;margin-bottom:8px}
+.ev.class{border-color:var(--blue)}.ev.meet{border-color:var(--grn)}.ev.exam{border-color:var(--red);background:#fdf0ee}.ev.event{border-color:var(--gold)}.ev.study{border-color:#8e44ad;background:#f6effa}.ev.trip{border-color:#16a085;background:#e8f8f5}.ev.due{border-color:#e67e22;background:#fef5ec}
+.ev.past{opacity:.45}.ev.now{box-shadow:0 0 0 2px var(--gold)}
+.ev .t{min-width:88px;font-size:13px;color:var(--mut)}.ev .ti{font-weight:600}.loc{font-size:12px;color:var(--mut)}
+.tag{font-size:11px;padding:2px 7px;border-radius:10px;margin-left:6px;background:#eee;color:#444;white-space:nowrap}
+.tag.red{background:var(--red);color:#fff}.tag.warn{background:#fff3cd;color:#8a6d00}.tag.grn{background:#e3f4ec;color:var(--grn)}
+.alert{background:#fff3cd;border:1px solid #f0d77a;border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:14px}
+.alert.red{background:#fdecea;border-color:#f5b7b1}.alert.info{background:#eef3fa;border-color:#c7d6ec}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
+input,select,textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+textarea{width:100%;min-height:90px}
+button.p{background:#1f2933;color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer}
+button.s{background:#fff;border:1px solid var(--line);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px}
+button.g{background:var(--gold);border:0;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:600}
+.week{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.day{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px;cursor:pointer}
+.day.today{border:2px solid var(--gold)}.day h4{margin:0 0 6px;font-size:13px}.mini{padding:3px 0;border-bottom:1px dashed var(--line)}
+.stats{display:flex;gap:12px;flex-wrap:wrap}.stat{flex:1;min-width:110px;background:#fafaf8;border-radius:10px;padding:12px;text-align:center}
+.stat b{display:block;font-size:22px}.stat span{font-size:12px;color:var(--mut)}
+.bar{display:flex;align-items:flex-end;gap:6px;height:120px;padding-top:16px;margin-bottom:22px}
+.bar div{flex:1;border-radius:4px 4px 0 0;position:relative;min-height:2px}
+.bar div span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:var(--mut)}
+.bar div em{position:absolute;top:-16px;left:0;right:0;text-align:center;font-size:10px;font-style:normal}
+ul.list{list-style:none;padding:0;margin:0}.list li{padding:7px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.done{text-decoration:line-through;color:var(--mut)}
+.entry{border-left:3px solid var(--gold);padding:6px 12px;margin-bottom:10px;white-space:pre-wrap}.entry small{color:var(--mut);display:block}
+#cmd{flex:1;font-size:15px}.hint{font-size:12px;color:var(--mut);margin-top:6px}#reply{margin-top:10px;font-size:14px}
+.hide{display:none}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.hab{display:inline-flex;gap:3px}.hab i{width:14px;height:14px;border-radius:3px;background:#eee;display:inline-block}.hab i.on{background:var(--grn)}
+pre.draft{white-space:pre-wrap;background:#fafaf8;border:1px dashed var(--line);padding:10px;border-radius:8px;font-family:inherit;font-size:13px}
+#mic.rec{background:var(--red)}
+.wx{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.wx .big{font-size:44px;line-height:1}.wx .tmp{font-size:34px;font-weight:700}
+.hours{display:flex;gap:6px;overflow-x:auto;margin-top:10px;padding-bottom:4px}.hours div{min-width:58px;text-align:center;background:#fafaf8;border-radius:8px;padding:6px 4px;font-size:12px}
+.hours div.cls{outline:2px solid var(--blue)}.hours b{display:block;font-size:14px}
+.news li{display:block}.news a{color:var(--ink);text-decoration:none;font-weight:500}.news a:hover{text-decoration:underline}
+.src{color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.02em}.tv{min-height:120px}.wl{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}.wl .item{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}.wl .item button{position:absolute;top:4px;right:4px;z-index:2}
+.seg button{border:1px solid var(--line);background:#fff;padding:4px 10px;cursor:pointer;font-size:12px}.seg button.on{background:#1f2933;color:#fff}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>📋 Daily Planner Agent</h1><div class="sub" id="clock"></div></div>
+  <div class="sub">Gabe Fasano · fasagb26@wfu.edu<br>🔒 Your data stays on this device</div>
+</header>
+<nav id="nav">
+  <button data-t="today" class="on">Today</button><button data-t="week">Week</button>
+  <button data-t="school">🎓 Canvas & School</button><button data-t="rem">Reminders</button>
+  <button data-t="habits">Habits</button><button data-t="journal">Journal</button><button data-t="health">Sleep & Health</button><button data-t="markets">📈 Markets</button>
+</nav>
+<main>
+  <div class="card">
+    <div class="row" style="margin:0"><input id="cmd" placeholder='Ask or tell me something… e.g. "slept 7 hours quality 4"'><button class="p" id="mic" title="Voice input">🎤</button></div>
+    <div class="hint"><b>slept X hours [quality 1-5]</b> · <b>mood/energy/symptom: …</b> · <b>remind me to … [on YYYY-MM-DD]</b> · <b>journal: …</b> · <b>add TITLE YYYY-MM-DD HH:MM</b> · <b>accept/decline &lt;event&gt;</b> · <b>did gym</b> · <b>what's next</b> · <b>plan study</b> · <b>bedtime</b></div>
+    <div id="reply"></div>
+  </div>
+
+  <section id="nw"></section>
+  <section id="today"></section>
+  <section id="week" class="hide"></section>
+
+  <section id="school" class="hide">
+    <div class="card"><h2>🔗 Connect Canvas</h2>
+      <p style="font-size:14px;margin-top:0">In Canvas, open <b>Calendar</b> and click <b>Calendar Feed</b> (bottom right). Copy the link, which ends in <code>.ics</code>. Then use one of these:</p>
+      <div class="row"><b style="min-width:20px">A.</b><input id="icsUrl" placeholder="Paste your Canvas feed URL" style="flex:1"><button class="p" onclick="fetchCanvas()">Sync now</button></div>
+      <div class="row"><b style="min-width:20px">B.</b><span style="font-size:14px">If "Sync now" is blocked by the browser, open the link to download the <code>.ics</code> file, then upload it:</span><input type="file" id="icsFile" accept=".ics,text/calendar"></div>
+      <div class="hint">⭐ Best option: in Google Calendar, use <b>Other calendars → + → From URL</b> and paste the same link. Canvas due dates then show up in Google Calendar automatically, and your chat assistant can see them too.</div>
+      <div id="canvasStatus"></div>
+    </div>
+    <div class="card"><h2>📄 Syllabus import</h2>
+      <p class="hint" style="margin-top:0">Paste the schedule part of a syllabus. Every line with a date becomes a deadline, and lines with quiz/test/exam/midterm/final are flagged as exams.</p>
+      <div class="row"><input id="syCourse" placeholder="Course (e.g. ACC-111)"><select id="syYear"><option>2026</option><option>2027</option></select></div>
+      <textarea id="syTxt" placeholder="Nov 10 – Midterm 2 (Ch. 5–8)&#10;11/14 Problem set 6 due&#10;Dec 9: Final exam"></textarea>
+      <div class="row" style="margin-top:8px"><button class="p" onclick="importSyllabus()">Find dates</button></div>
+      <div id="syPreview"></div>
+    </div>
+    <div class="card"><h2>🗂 Assignments & exams</h2><ul class="list" id="aList"></ul></div>
+    <div class="card"><h2>📚 Study planner</h2><div id="studyPlan"></div></div>
+    <div class="card"><h2>📊 Grade tracker</h2>
+      <div class="row"><input id="gCourse" placeholder="Course" list="courseList" style="width:130px"><input id="gName" placeholder="Item (Quiz 3)" style="width:140px"><input id="gScore" type="number" placeholder="Score" style="width:80px"><span>/</span><input id="gMax" type="number" placeholder="Out of" style="width:80px"><input id="gW" type="number" placeholder="Weight %" style="width:90px"><button class="p" onclick="addGrade()">Add</button></div>
+      <datalist id="courseList"></datalist>
+      <div id="grades"></div>
+    </div>
+    <div class="card"><h2>🚶 Class locations (for walking-time warnings)</h2>
+      <p class="hint" style="margin-top:0">Pick the building for each class. If two back-to-back events are too far apart to walk in the gap, I'll warn you. Walking times are rough campus estimates.</p>
+      <div id="locs"></div>
+    </div>
+  </section>
+
+  <section id="rem" class="hide">
+    <div class="card"><h2>⏰ Reminders & tasks</h2>
+      <div class="row"><input id="rTxt" placeholder="Task" style="flex:2"><input id="rDate" type="date"><button class="p" onclick="addRem()">Add</button></div>
+      <ul class="list" id="rList"></ul></div>
+  </section>
+
+  <section id="habits" class="hide">
+    <div class="card"><h2>🔥 Habit streaks</h2>
+      <div class="row"><input id="habNew" placeholder="New habit (gym, French practice, read 20 min)" style="flex:1"><button class="p" onclick="addHabit()">Add</button></div>
+      <ul class="list" id="habList"></ul></div>
+  </section>
+
+  <section id="journal" class="hide">
+    <div class="card" id="checkin"></div>
+    <div class="card"><h2>📓 Journal</h2>
+      <textarea id="jTxt" placeholder="What's on your mind?"></textarea>
+      <div class="row" style="margin-top:8px"><button class="p" onclick="addJournal()">Save entry</button><button class="s" onclick="exportData()">Export all data (.json)</button><label class="s" style="cursor:pointer">Import backup<input type="file" accept=".json" onchange="importData(this)" hidden></label></div>
+      <div id="jList"></div></div>
+  </section>
+
+  <section id="markets" class="hide">
+    <div class="card" style="padding:8px"><div id="tvTape" class="tv" style="min-height:50px"></div></div>
+    <div class="grid2">
+      <div class="card"><h2>🌐 Market overview</h2><div id="tvOverview" class="tv" style="height:470px"></div></div>
+      <div class="card"><h2>🔥 Today's movers (S&amp;P 500)</h2><div id="tvMovers" class="tv" style="height:470px"></div></div>
+    </div>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">👀 Stocks to watch</h2>
+      <div class="row" style="margin:0"><input id="wlAdd" placeholder="Add ticker (e.g. NVDA)" style="width:170px"><button class="p" onclick="addTicker()">Add</button><button class="s" onclick="resetWatch()">Reset list</button></div></div>
+      <p class="hint" style="margin-top:4px">My starting picks: big tech that moves the whole market, plus banks and payment and crypto companies for your <b>FYS Fintech</b> class. Edit it however you like.</p>
+      <div id="wl" class="wl"></div></div>
+    <div class="grid2">
+      <div class="card"><h2>💹 Market headlines</h2><div id="mktNews"></div></div>
+      <div class="card"><h2>🗓 Economic calendar (US)</h2><div id="tvEcon" class="tv" style="height:420px"></div></div>
+    </div>
+    <p class="hint">Market data from TradingView (may be delayed up to 15 minutes) · headlines from Bloomberg Markets and NYT Business · not financial advice.</p>
+  </section>
+
+  <section id="health" class="hide">
+    <div class="grid2">
+      <div class="card"><h2>😴 Sleep</h2>
+        <div class="row"><input id="sDate" type="date"><input id="sHrs" type="number" step="0.25" placeholder="Hours" style="width:80px">
+          <select id="sQ"><option value="">Quality</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select><button class="p" onclick="addSleep()">Log</button></div>
+        <div class="stats" id="sStats"></div><h3>Last 7 nights</h3><div class="bar" id="sBar"></div>
+        <div id="bedtime"></div></div>
+      <div class="card"><h2>⌚ Whoop</h2>
+        <p class="hint" style="margin-top:0">In the Whoop app, go to <b>More → App Settings → Data Export</b>. Upload <code>sleeps.csv</code> and/or <code>physiological_cycles.csv</code> from the export.</p>
+        <input type="file" id="whoopFile" accept=".csv" multiple>
+        <div id="whoopStatus"></div>
+        <div class="stats" id="wStats" style="margin-top:10px"></div><h3>Recovery (last 7)</h3><div class="bar" id="wBar"></div></div>
+    </div>
+    <div class="card"><h2>💡 Workload vs. recovery insights</h2><div id="insights"></div></div>
+    <div class="card"><h2>❤️ Health notes</h2>
+      <div class="row"><select id="hType"><option>mood</option><option>energy</option><option>symptom</option><option>other</option></select>
+        <input id="hTxt" placeholder="e.g. tired, headache, feeling great" style="flex:2"><button class="p" onclick="addHealth()">Log</button></div>
+      <ul class="list" id="hList"></ul></div>
+  </section>
+</main>
+
+<script>
+// ================= Calendar snapshot from Google Calendar (week of Nov 2, 2026) =================
+// Google Calendar snapshot, synced Nov 3, 2026 (Nov 2 – Dec 11)
+const CAL=[{"date": "2026-11-02", "start": "05:30", "end": "08:30", "title": "🏒 Hockey Practice", "loc": "Reynolds Gym", "kind": "meet", "rsvp": "", "org": "", "allDay": false, "id": "g0", "src": "gcal"}, {"date": "2026-11-02", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g1", "src": "gcal"}, {"date": "2026-11-02", "start": "11:00", "end": "12:15", "title": "MTH-104", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g2", "src": "gcal"}, {"date": "2026-11-02", "start": "12:30", "end": "13:45", "title": "Financial Accounting ACC-111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g3", "src": "gcal"}, {"date": "2026-11-02", "start": "15:30", "end": "16:00", "title": "CLASS Peer Tutoring – Campbell Brode", "loc": "ZSR Library", "kind": "meet", "rsvp": "", "org": "", "allDay": false, "id": "g4", "src": "gcal"}, {"date": "2026-11-02", "start": "17:00", "end": "17:30", "title": "CLASS Peer Tutoring – Campbell Brode", "loc": "ZSR Library", "kind": "meet", "rsvp": "", "org": "", "allDay": false, "id": "g5", "src": "gcal"}, {"date": "2026-11-03", "start": "11:00", "end": "12:00", "title": "FYS Fintech & Big Data", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g6", "src": "gcal"}, {"date": "2026-11-03", "start": "15:00", "end": "15:30", "title": "CLASS Peer Tutoring – Elyse Duong", "loc": "Farrell Hall", "kind": "meet", "rsvp": "", "org": "", "allDay": false, "id": "g7", "src": "gcal"}, {"date": "2026-11-03", "start": "17:30", "end": "18:30", "title": "Alum lecture: Dr. Caroline Culp", "loc": "Scales Fine Arts Center", "kind": "event", "rsvp": "rsvp", "org": "startgal@wfu.edu", "allDay": false, "id": "g8", "src": "gcal"}, {"date": "2026-11-04", "start": "05:30", "end": "08:30", "title": "🏒 Hockey Practice", "loc": "Reynolds Gym", "kind": "meet", "rsvp": "", "org": "", "allDay": false, "id": "g9", "src": "gcal"}, {"date": "2026-11-04", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g10", "src": "gcal"}, {"date": "2026-11-04", "start": "11:00", "end": "12:15", "title": "MTH-104", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g11", "src": "gcal"}, {"date": "2026-11-04", "start": "11:00", "end": "12:00", "title": "Coffee & Donuts with Dr. Caroline Culp", "loc": "Scales Fine Arts Center", "kind": "event", "rsvp": "rsvp", "org": "startgal@wfu.edu", "allDay": false, "id": "g12", "src": "gcal"}, {"date": "2026-11-04", "start": "12:30", "end": "13:45", "title": "Financial Accounting ACC-111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g13", "src": "gcal"}, {"date": "2026-11-04", "start": "15:30", "end": "16:00", "title": "CLASS Peer Tutoring – Campbell Brode", "loc": "ZSR Library", "kind": "meet", "rsvp": "", "org": "", "allDay": false, "id": "g14", "src": "gcal"}, {"date": "2026-11-05", "start": "11:00", "end": "12:00", "title": "FYS Fintech & Big Data", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g15", "src": "gcal"}, {"date": "2026-11-06", "start": "00:00", "end": "23:59", "title": "🚌 Hockey DC Trip", "loc": "", "kind": "trip", "rsvp": "", "org": "", "allDay": true, "id": "g16", "src": "gcal"}, {"date": "2026-11-06", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g17", "src": "gcal"}, {"date": "2026-11-06", "start": "11:00", "end": "12:15", "title": "MTH-104", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g18", "src": "gcal"}, {"date": "2026-11-07", "start": "00:00", "end": "23:59", "title": "🚌 Hockey DC Trip", "loc": "", "kind": "trip", "rsvp": "", "org": "", "allDay": true, "id": "g19", "src": "gcal"}, {"date": "2026-11-08", "start": "00:00", "end": "23:59", "title": "🚌 Hockey DC Trip", "loc": "", "kind": "trip", "rsvp": "", "org": "", "allDay": true, "id": "g20", "src": "gcal"}, {"date": "2026-11-09", "start": "05:30", "end": "08:30", "title": "🏒 Hockey Practice", "loc": "Reynolds Gym", "kind": "meet", "rsvp": "", "org": "", "allDay": false, "id": "g21", "src": "gcal"}, {"date": "2026-11-09", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g22", "src": "gcal"}, {"date": "2026-11-09", "start": "11:00", "end": "12:15", "title": "MTH-104", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g23", "src": "gcal"}, {"date": "2026-11-09", "start": "12:30", "end": "13:45", "title": "Financial Accounting ACC-111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g24", "src": "gcal"}, {"date": "2026-11-10", "start": "11:00", "end": "12:00", "title": "🚨 TEST: FYS – Test on second presentations (in class)", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g25", "src": "gcal"}, {"date": "2026-11-10", "start": "17:00", "end": "18:00", "title": "Wake Accounting Society – Planning Your Path (120 vs 150, internships)", "loc": "Farrell Hall", "kind": "event", "rsvp": "rsvp", "org": "kearnss@wfu.edu", "allDay": false, "id": "g26", "src": "gcal"}, {"date": "2026-11-11", "start": "05:30", "end": "08:30", "title": "🏒 Hockey Practice", "loc": "Reynolds Gym", "kind": "meet", "rsvp": "", "org": "", "allDay": false, "id": "g27", "src": "gcal"}, {"date": "2026-11-11", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g28", "src": "gcal"}, {"date": "2026-11-11", "start": "11:00", "end": "12:15", "title": "MTH-104", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g29", "src": "gcal"}, {"date": "2026-11-11", "start": "12:30", "end": "13:45", "title": "Financial Accounting ACC-111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g30", "src": "gcal"}, {"date": "2026-11-12", "start": "11:00", "end": "12:00", "title": "FYS Fintech & Big Data", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g31", "src": "gcal"}, {"date": "2026-11-13", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g32", "src": "gcal"}, {"date": "2026-11-13", "start": "11:00", "end": "12:15", "title": "MTH-104", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g33", "src": "gcal"}, {"date": "2026-11-16", "start": "05:30", "end": "08:30", "title": "🏒 Hockey Practice", "loc": "Reynolds Gym", "kind": "meet", "rsvp": "", "org": "", "allDay": false, "id": "g34", "src": "gcal"}, {"date": "2026-11-16", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g35", "src": "gcal"}, {"date": "2026-11-16", "start": "11:00", "end": "12:15", "title": "MTH-104", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g36", "src": "gcal"}, {"date": "2026-11-16", "start": "12:30", "end": "13:45", "title": "Financial Accounting ACC-111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g37", "src": "gcal"}, {"date": "2026-11-17", "start": "11:00", "end": "12:00", "title": "FYS Fintech & Big Data", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g38", "src": "gcal"}, {"date": "2026-11-18", "start": "05:30", "end": "08:30", "title": "🏒 Hockey Practice", "loc": "Reynolds Gym", "kind": "meet", "rsvp": "", "org": "", "allDay": false, "id": "g39", "src": "gcal"}, {"date": "2026-11-18", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g40", "src": "gcal"}, {"date": "2026-11-18", "start": "11:00", "end": "12:15", "title": "MTH-104", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g41", "src": "gcal"}, {"date": "2026-11-18", "start": "12:30", "end": "13:45", "title": "Financial Accounting ACC-111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g42", "src": "gcal"}, {"date": "2026-11-19", "start": "11:00", "end": "12:00", "title": "FYS Fintech & Big Data", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g43", "src": "gcal"}, {"date": "2026-11-20", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g44", "src": "gcal"}, {"date": "2026-11-20", "start": "11:00", "end": "12:15", "title": "MTH-104", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g45", "src": "gcal"}, {"date": "2026-11-23", "start": "05:30", "end": "08:30", "title": "🏒 Hockey Practice", "loc": "Reynolds Gym", "kind": "meet", "rsvp": "", "org": "", "allDay": false, "id": "g46", "src": "gcal"}, {"date": "2026-11-23", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g47", "src": "gcal"}, {"date": "2026-11-23", "start": "12:30", "end": "13:45", "title": "Financial Accounting ACC-111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g48", "src": "gcal"}, {"date": "2026-11-24", "start": "11:00", "end": "12:00", "title": "FYS Fintech & Big Data", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g49", "src": "gcal"}, {"date": "2026-11-25", "start": "05:30", "end": "08:30", "title": "🏒 Hockey Practice", "loc": "Reynolds Gym", "kind": "meet", "rsvp": "", "org": "", "allDay": false, "id": "g50", "src": "gcal"}, {"date": "2026-11-25", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g51", "src": "gcal"}, {"date": "2026-11-25", "start": "12:30", "end": "13:45", "title": "Financial Accounting ACC-111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g52", "src": "gcal"}, {"date": "2026-11-26", "start": "11:00", "end": "12:00", "title": "FYS Fintech & Big Data", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g53", "src": "gcal"}, {"date": "2026-11-27", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g54", "src": "gcal"}, {"date": "2026-11-29", "start": "14:00", "end": "15:30", "title": "📚 Study: French oral exam prep", "loc": "ZSR Library", "kind": "study", "rsvp": "", "org": "", "allDay": false, "id": "g55", "src": "gcal"}, {"date": "2026-11-30", "start": "05:30", "end": "08:30", "title": "🏒 Hockey Practice", "loc": "Reynolds Gym", "kind": "meet", "rsvp": "", "org": "", "allDay": false, "id": "g56", "src": "gcal"}, {"date": "2026-11-30", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g57", "src": "gcal"}, {"date": "2026-11-30", "start": "12:30", "end": "13:45", "title": "Financial Accounting ACC-111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g58", "src": "gcal"}, {"date": "2026-12-01", "start": "11:00", "end": "12:00", "title": "FYS Fintech & Big Data", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g59", "src": "gcal"}, {"date": "2026-12-01", "start": "15:00", "end": "16:30", "title": "📚 Study: French oral exam prep", "loc": "ZSR Library", "kind": "study", "rsvp": "", "org": "", "allDay": false, "id": "g60", "src": "gcal"}, {"date": "2026-12-02", "start": "05:30", "end": "08:30", "title": "🏒 Hockey Practice", "loc": "Reynolds Gym", "kind": "meet", "rsvp": "", "org": "", "allDay": false, "id": "g61", "src": "gcal"}, {"date": "2026-12-02", "start": "10:00", "end": "10:50", "title": "🚨 EXAM: French 111 – Examen oral", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g62", "src": "gcal"}, {"date": "2026-12-03", "start": "11:00", "end": "12:00", "title": "🚨 TEST: FYS – Test on third presentation (final class)", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g63", "src": "gcal"}, {"date": "2026-12-04", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g64", "src": "gcal"}, {"date": "2026-12-06", "start": "14:00", "end": "16:00", "title": "📚 Study: MTH-104 final review", "loc": "ZSR Library", "kind": "study", "rsvp": "", "org": "", "allDay": false, "id": "g65", "src": "gcal"}, {"date": "2026-12-07", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g66", "src": "gcal"}, {"date": "2026-12-08", "start": "11:00", "end": "12:00", "title": "FYS Fintech & Big Data", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g67", "src": "gcal"}, {"date": "2026-12-08", "start": "14:00", "end": "16:00", "title": "📚 Study: MTH-104 final review", "loc": "ZSR Library", "kind": "study", "rsvp": "", "org": "", "allDay": false, "id": "g68", "src": "gcal"}, {"date": "2026-12-09", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g69", "src": "gcal"}, {"date": "2026-12-09", "start": "14:00", "end": "16:00", "title": "📚 Study: MTH-104 final – practice problems", "loc": "ZSR Library", "kind": "study", "rsvp": "", "org": "", "allDay": false, "id": "g70", "src": "gcal"}, {"date": "2026-12-09", "start": "19:00", "end": "20:30", "title": "📚 Study: French final review", "loc": "ZSR Library", "kind": "study", "rsvp": "", "org": "", "allDay": false, "id": "g71", "src": "gcal"}, {"date": "2026-12-10", "start": "13:00", "end": "15:00", "title": "🚨 FINAL: MTH-104 Final Assessment", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g72", "src": "gcal"}, {"date": "2026-12-10", "start": "16:00", "end": "18:00", "title": "📚 Study: French final review", "loc": "ZSR Library", "kind": "study", "rsvp": "", "org": "", "allDay": false, "id": "g73", "src": "gcal"}, {"date": "2026-12-11", "start": "09:00", "end": "12:00", "title": "🚨 FINAL: French 111 – Examen final", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g74", "src": "gcal"}, {"date": "2026-12-11", "start": "10:00", "end": "10:50", "title": "French 111", "loc": "", "kind": "", "rsvp": "", "org": "", "allDay": false, "id": "g75", "src": "gcal"}];
+// Canvas items synced from Gabe's Canvas feed on Nov 2, 2026 (ACC-111 end-of-term "close" dates on Dec 12 left out)
+const CANVAS_REF=[{"id":"c715687","title":"Examen final (9:00 AM)","course":"FRH-111-A","date":"2026-12-11","time":"10:00","src":"canvas"}];
+const CANVAS_SEED=[{"id": "c731642", "title": "Pie Progress Goal - Module 1 & 2", "course": "MTH-104-A2", "date": "2026-11-02", "time": "", "src": "canvas", "done": false}, {"id": "c724899", "title": "Find 3 sources for constructing second agent", "course": "FYS-100-QQ", "date": "2026-11-05", "time": "", "src": "canvas", "done": false}, {"id": "c731637", "title": "Module 3 - Graphs", "course": "MTH-104-A2", "date": "2026-11-05", "time": "", "src": "canvas", "done": false}, {"id": "c731331", "title": "Mastery Quiz - Module 3", "course": "MTH-104-A2", "date": "2026-11-06", "time": "", "src": "canvas", "done": false}, {"id": "c729260", "title": "Chapitre 7, Leçon 1", "course": "FRH-111-A", "date": "2026-11-08", "time": "", "src": "canvas", "done": false}, {"id": "c729261", "title": "Chapitre 7, Leçon  2", "course": "FRH-111-A", "date": "2026-11-10", "time": "", "src": "canvas", "done": false}, {"id": "c729263", "title": "Chapitre 7, Leçon 3", "course": "FRH-111-A", "date": "2026-11-12", "time": "", "src": "canvas", "done": false}, {"id": "c724900", "title": "Create your rough draft of your second agent", "course": "FYS-100-QQ", "date": "2026-11-12", "time": "", "src": "canvas", "done": false}, {"id": "c731638", "title": "Module 4 - Polynomial and Rational Functions", "course": "MTH-104-A2", "date": "2026-11-12", "time": "", "src": "canvas", "done": false}, {"id": "c731332", "title": "Mastery Quiz - Module 4", "course": "MTH-104-A2", "date": "2026-11-13", "time": "", "src": "canvas", "done": false}, {"id": "c729262", "title": "Chapitre 7, Leçon 4", "course": "FRH-111-A", "date": "2026-11-15", "time": "", "src": "canvas", "done": false}, {"id": "c729281", "title": "Chapitre 8, Leçon 1", "course": "FRH-111-A", "date": "2026-11-17", "time": "", "src": "canvas", "done": false}, {"id": "c724901", "title": "Complete your final draft of your second agent", "course": "FYS-100-QQ", "date": "2026-11-17", "time": "", "src": "canvas", "done": false}, {"id": "c724905", "title": "Give your third presentation", "course": "FYS-100-QQ", "date": "2026-11-17", "time": "", "src": "canvas", "done": false}, {"id": "c731643", "title": "Pie Progress Modules 1-4", "course": "MTH-104-A2", "date": "2026-11-18", "time": "", "src": "canvas", "done": false}, {"id": "c729280", "title": "Chapitre 8, Leçon 2", "course": "FRH-111-A", "date": "2026-11-19", "time": "", "src": "canvas", "done": false}, {"id": "c731639", "title": "Module 5 - Exponentials and Logarithms", "course": "MTH-104-A2", "date": "2026-11-19", "time": "", "src": "canvas", "done": false}, {"id": "c731333", "title": "Mastery Quiz - Module 5", "course": "MTH-104-A2", "date": "2026-11-20", "time": "", "src": "canvas", "done": false}, {"id": "c729330", "title": "Chapitre 8, Leçon 3", "course": "FRH-111-A", "date": "2026-11-22", "time": "", "src": "canvas", "done": false}, {"id": "c729329", "title": "Chapitre 8, Leçon 4", "course": "FRH-111-A", "date": "2026-11-29", "time": "", "src": "canvas", "done": false}, {"id": "c731640", "title": "Module 6 - Trigonometry", "course": "MTH-104-A2", "date": "2026-12-03", "time": "", "src": "canvas", "done": false}, {"id": "c731334", "title": "Mastery Quiz - Module 6", "course": "MTH-104-A2", "date": "2026-12-04", "time": "", "src": "canvas", "done": false}, {"id": "c726396", "title": "Co-Curricular Activity", "course": "FRH-111-A", "date": "2026-12-07", "time": "", "src": "canvas", "done": false}, {"id": "c731644", "title": "Pie Progress Goal Modules 1-6", "course": "MTH-104-A2", "date": "2026-12-09", "time": "", "src": "canvas", "done": false}];
+const COURSES=["French 111","MTH-104","Financial Accounting ACC-111","FYS Fintech & Big Data"];
+// Rough walking minutes between WFU buildings (estimates)
+const BLDG=["ZSR Library","Farrell Hall","Scales Fine Arts Center","Greene Hall","Manchester Hall","Kirby Hall","Reynolda Hall","Benson Center","Carswell Hall","Tribble Hall","Wingate Hall","Reynolds Gym","Other"];
+const NEAR={"ZSR Library":0,"Reynolda Hall":0,"Tribble Hall":0,"Benson Center":1,"Carswell Hall":1,"Greene Hall":1,"Wingate Hall":1,"Kirby Hall":2,"Manchester Hall":2,"Farrell Hall":3,"Reynolds Gym":3,"Scales Fine Arts Center":3};
+const walk=(a,b)=>{if(!a||!b||a===b)return 0;if(!(a in NEAR)||!(b in NEAR))return 10;return 4+Math.abs(NEAR[a]-NEAR[b])*3+(NEAR[a]===3&&NEAR[b]===3?6:0)};
+
+// ================= Storage =================
+const S=JSON.parse(localStorage.getItem("planner2")||localStorage.getItem("planner")||"{}");
+["events","rem","journal","sleep","health","assign","grades","habits","whoop"].forEach(k=>S[k]=S[k]||[]);
+S.locs=S.locs||{};CANVAS_SEED.forEach(c=>{if(!S.assign.some(a=>a.id===c.id))S.assign.push({...c})});S.canvasUrl=S.canvasUrl||"https://wakeforest.instructure.com/feeds/calendars/user_s5zYXopk5QZ9uUOrWST5S7DwJnVXldxV7dOt6RiO.ics";S.rsvp=S.rsvp||{};S.canvasUrl=S.canvasUrl||"";
+const save=()=>localStorage.setItem("planner2",JSON.stringify(S));
+
+// ================= Helpers =================
+const pad=n=>String(n).padStart(2,"0"),ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const now=()=>new Date(),today=()=>ymd(now()),nowHM=()=>pad(now().getHours())+":"+pad(now().getMinutes());
+const fmt12=t=>{let[h,m]=t.split(":").map(Number);return`${(h%12)||12}:${pad(m)} ${h<12?"AM":"PM"}`};
+const dayName=d=>new Date(d+"T12:00").toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
+const short=d=>new Date(d+"T12:00").toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const addDays=(d,n)=>{const x=new Date(d+"T12:00");x.setDate(x.getDate()+n);return ymd(x)};
+const daysBetween=(a,b)=>Math.round((new Date(b+"T12:00")-new Date(a+"T12:00"))/864e5);
+const mins=t=>{let[h,m]=t.split(":").map(Number);return h*60+m},hm=m=>pad(Math.floor(m/60))+":"+pad(m%60);
+const EXAM=/\b(quiz|test|exam|examen|midterm|final(?! draft)|assessment|interro)\b/i;
+const kindOf=e=>["study","due","trip"].includes(e.kind)?e.kind:EXAM.test(e.title)?"exam":(e.kind||"class");
+const locOf=e=>e.loc||S.locs[e.title]||"";
+const assignEvents=()=>S.assign.filter(a=>!a.done).map(a=>({id:a.id,date:a.date,start:a.time||"23:59",end:a.time||"23:59",title:a.title+(a.course?` [${a.course}]`:""),loc:"",kind:EXAM.test(a.title)?"exam":"due",src:a.src,isDue:true}));
+const allEvents=()=>[...CAL,...S.events,...assignEvents()].sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
+const onDay=d=>allEvents().filter(e=>e.date===d);
+const timed=l=>l.filter(e=>!e.isDue&&!e.allDay);
+function conflicts(list){const out=[];list=timed(list);for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++)
+  if(mins(list[i].start)<mins(list[j].end)&&mins(list[j].start)<mins(list[i].end))out.push([list[i],list[j]]);return out}
+function walkWarnings(list){const l=timed(list),w=[];for(let i=0;i+1<l.length;i++){const a=l[i],b=l[i+1],gap=mins(b.start)-mins(a.end),need=walk(locOf(a),locOf(b));
+  if(need&&gap>=0&&gap<need)w.push({a,b,gap,need})}return w}
+const upcomingExams=(n=14)=>allEvents().filter(e=>kindOf(e)==="exam"&&e.date>=today()&&daysBetween(today(),e.date)<=n);
+const toast=m=>{reply.innerHTML="🤖 "+m};
+
+// ================= Morning briefing =================
+function briefing(){
+  const t=today(),list=onDay(t),h=now().getHours();
+  const greet=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
+  const items=[];
+  const cls=timed(list);
+  items.push(cls.length?`You have <b>${cls.length}</b> thing${cls.length>1?"s":""} on today, starting with <b>${esc(cls[0].title)}</b> at ${fmt12(cls[0].start)}.`:"Nothing scheduled today. Good day to get ahead.");
+  const ls=lastSleep(),w=S.whoop.slice(-1)[0];
+  if(ls)items.push(`You slept <b>${ls.hrs}h</b>${ls.q?` (quality ${ls.q}/5)`:""}.${ls.hrs<6?" Rough night, so protect your energy today.":""}`);
+  if(w&&w.recovery!=null)items.push(`Whoop recovery: <b>${w.recovery}%</b> ${w.recovery>=67?"🟢":w.recovery>=34?"🟡":"🔴"}`);
+  if(S.wxCache&&S.wxCache.d&&S.wxCache.d.daily){const d=S.wxCache.d,dy=d.daily;if(dy.time[0]===t)items.push(`${wx(dy.weather_code[0])[0]} ${wx(dy.weather_code[0])[1]}, high ${Math.round(dy.temperature_2m_max[0])}° and low ${Math.round(dy.temperature_2m_min[0])}°${dy.precipitation_probability_max[0]>=40?` · ☂️ ${dy.precipitation_probability_max[0]}% rain, so bring an umbrella`:""}.`)}
+  const ex=upcomingExams(7);if(ex.length)items.push(`🚨 <b>${ex.length}</b> exam/quiz in the next 7 days. Next: <b>${esc(ex[0].title)}</b>, ${short(ex[0].date)}.`);
+  const due=list.filter(e=>e.isDue);if(due.length)items.push(`📌 Due today: ${due.map(e=>esc(e.title)).join(", ")}`);
+  const cf=conflicts(list);if(cf.length)items.push(`⚠ ${cf.length} schedule overlap${cf.length>1?"s":""} today. See the conflict fixer below.`);
+  const rv=allEvents().filter(e=>e.rsvp&&!S.rsvp[e.id]&&e.date>=t);if(rv.length)items.push(`✉ ${rv.length} invite${rv.length>1?"s":""} waiting on your RSVP.`);
+  const pr=priority();items.push(`🎯 <b>Today's priority:</b> ${pr}`);
+  return `<div class="card brief"><h2>☀️ ${greet}, Gabe</h2><ul style="margin:0;padding-left:18px">${items.map(i=>`<li>${i}</li>`).join("")}</ul></div>`}
+function priority(){
+  const ex=upcomingExams(5);if(ex.length)return`Study for ${esc(ex[0].title)} (${daysBetween(today(),ex[0].date)===0?"today!":"in "+daysBetween(today(),ex[0].date)+" day(s)"}).`;
+  const r=S.rem.filter(r=>!r.done&&r.date&&r.date<=addDays(today(),1)).sort((a,b)=>a.date.localeCompare(b.date))[0];if(r)return esc(r.text);
+  const a=S.assign.filter(a=>!a.done&&a.date>=today()).sort((a,b)=>a.date.localeCompare(b.date))[0];if(a)return`Get started on ${esc(a.title)} (due ${short(a.date)}).`;
+  return"Nothing urgent. Maybe get ahead on reading or catch up on sleep.";}
+
+// ================= Rendering =================
+let viewDay=today();
+function evHTML(e,cfSet){
+  const k=kindOf(e),isT=e.date===today(),cur=mins(nowHM());
+  const st=isT&&!e.isDue&&!e.allDay&&mins(e.end)<cur?"past":isT&&!e.isDue&&!e.allDay&&mins(e.start)<=cur&&cur<mins(e.end)?"now":"";
+  const rs=S.rsvp[e.id];
+  return `<div class="ev ${k} ${st}"><div class="t">${e.allDay?"All day":e.isDue?"Due"+(e.start!=="23:59"?"<br>"+fmt12(e.start):""):fmt12(e.start)+"<br>"+fmt12(e.end)}</div><div style="flex:1">
+   <div class="ti">${esc(e.title)}${k==="exam"?'<span class="tag red">EXAM/QUIZ</span>':""}${k==="study"?'<span class="tag">study block</span>':""}${cfSet.has(e)?'<span class="tag warn">⚠ overlap</span>':""}${e.src==="canvas"?'<span class="tag">Canvas</span>':""}
+   ${e.rsvp?(rs?`<span class="tag ${rs==="accepted"?"grn":""}">${rs}</span>`:`<span class="tag warn">RSVP needed</span> <button class="s" onclick="rsvp('${e.id}','accepted')">Accept</button> <button class="s" onclick="rsvp('${e.id}','declined')">Decline</button>`):""}
+   ${e.src==="local"||e.kind==="study"?` <button class="s" onclick="delEvent('${e.id}')">✕</button>`:""}</div>
+   ${locOf(e)?`<div class="loc">📍 ${esc(locOf(e))}</div>`:""}</div></div>`}
+
+function renderToday(){
+  const list=onDay(viewDay),cf=conflicts(list),cfSet=new Set(cf.flat()),t=today(),ww=walkWarnings(list);
+  const nextUp=viewDay===t&&timed(list).find(e=>mins(e.end)>mins(nowHM()));
+  let html=viewDay===t?briefing()+watchHTML(4):"";
+  html+=`<div class="card"><div class="row" style="justify-content:space-between">
+     <h2 style="margin:0">📅 ${dayName(viewDay)}</h2>
+     <div><button class="s" onclick="shift(-1)">◀</button> <button class="s" onclick="viewDay=today();render()">Today</button> <button class="s" onclick="shift(1)">▶</button></div></div>
+     ${nextUp?`<p style="margin:8px 0 0">⏭ <b>Next up:</b> ${esc(nextUp.title)} at ${fmt12(nextUp.start)}</p>`:""}</div>`;
+  if(cf.length){html+=`<div class="card"><h2>🛠 Conflict fixer</h2>`+cf.map(([a,b],i)=>fixer(a,b,i)).join("")+`</div>`}
+  if(ww.length)html+=`<div class="card"><h2>🚶 Tight transitions</h2>${ww.map(w=>`<div class="alert">${esc(w.a.title)} (${esc(locOf(w.a))}) → ${esc(w.b.title)} (${esc(locOf(w.b))}): only <b>${w.gap} min</b> between them, and the walk is about <b>${w.need} min</b>. Plan to leave a few minutes early.</div>`).join("")}</div>`;
+  html+=`<div class="card"><h2>Schedule (${list.length})</h2>${list.length?list.map(e=>evHTML(e,cfSet)).join(""):'<p style="color:var(--mut)">Nothing on the calendar. 🎉</p>'}
+     <h3>Add event</h3><div class="row"><input id="eT" placeholder="Title" style="flex:2"><input id="eS" type="time"><input id="eE" type="time"><select id="eL"><option value="">Location</option>${BLDG.map(b=>`<option>${b}</option>`).join("")}</select><button class="p" onclick="addEvent()">Add</button></div>
+     <div class="hint">Events added here are saved in this browser. To put them on Google Calendar, ask your assistant in chat.</div></div>`;
+  if(viewDay===t)html+=`<div class="card">${bedtimeHTML()}</div>`;
+  document.getElementById("today").innerHTML=html}
+
+function fixer(a,b,i){
+  const cls=[a,b].find(e=>kindOf(e)==="class"),other=[a,b].find(e=>e!==cls)||b;
+  const free=freeSlots(other.date,mins(other.end)-mins(other.start)).slice(0,2);
+  const sugg=cls?`<b>${esc(cls.title)}</b> is a class, so you'll probably want to keep it. ${other.end<=cls.end?`You could also catch the end of <b>${esc(other.title)}</b> if you leave class right away, but it ends first.`:""}`:"Pick whichever matters more.";
+  const draft=`Hi,\n\nThank you for the invitation to "${other.title}" on ${dayName(other.date)}. Unfortunately it overlaps with my ${cls?cls.title:"another commitment"} class (${fmt12((cls||a).start)}–${fmt12((cls||a).end)}). I'd love to connect another time${free.length?`. I'm free ${free.map(f=>`${fmt12(f[0])}–${fmt12(f[1])}`).join(" or ")} that day`:""} if that works.\n\nBest,\nGabe Fasano`;
+  return `<div class="alert"><b>${esc(a.title)}</b> ${fmt12(a.start)}–${fmt12(a.end)} ↔ <b>${esc(b.title)}</b> ${fmt12(b.start)}–${fmt12(b.end)}<br>${sugg}
+   <details style="margin-top:6px"><summary style="cursor:pointer">✉ Draft a note${other.org?` to ${esc(other.org)}`:""}</summary><pre class="draft" id="draft${i}">${esc(draft)}</pre>
+   <button class="s" onclick="navigator.clipboard.writeText(document.getElementById('draft${i}').innerText);toast('Copied to clipboard.')">Copy</button>
+   ${other.org?`<a class="s" style="text-decoration:none;color:inherit;padding:4px 10px" href="mailto:${other.org}?subject=${encodeURIComponent("Re: "+other.title)}&body=${encodeURIComponent(draft)}">Open in email</a>`:""}</details></div>`}
+
+function freeSlots(d,minLen=60,from=8*60,to=22*60){
+  const busy=timed(onDay(d)).map(e=>[mins(e.start),mins(e.end)]).sort((a,b)=>a[0]-b[0]);
+  const out=[];let c=from;for(const[s,e]of busy){if(s-c>=minLen)out.push([hm(c),hm(s)]);c=Math.max(c,e)}if(to-c>=minLen)out.push([hm(c),hm(to)]);
+  if(d===today()){const n=mins(nowHM());return out.filter(f=>mins(f[1])-Math.max(n,mins(f[0]))>=minLen).map(f=>[hm(Math.max(n+10,mins(f[0]))),f[1]])}
+  return out}
+
+function renderWeek(){
+  const t=today(),start=addDays(t,-((new Date(t+"T12:00").getDay()+6)%7)),days=[...Array(7)].map((_,i)=>addDays(start,i));
+  const all=days.flatMap(onDay),exams=all.filter(e=>kindOf(e)==="exam"),meets=all.filter(e=>kindOf(e)==="meet"),rv=all.filter(e=>e.rsvp&&!S.rsvp[e.id]),due=all.filter(e=>e.isDue);
+  let html=`<div class="card"><h2>🗓 Week at a glance</h2><div class="stats"><div class="stat"><b>${all.length}</b><span>items</span></div><div class="stat"><b style="color:var(--red)">${exams.length}</b><span>exams/quizzes</span></div><div class="stat"><b>${due.length}</b><span>assignments due</span></div><div class="stat"><b>${meets.length}</b><span>tutoring/meetings</span></div><div class="stat"><b>${rv.length}</b><span>need RSVP</span></div></div>`;
+  if(exams.length)html+='<h3>Exams & quizzes</h3>'+exams.map(e=>`<div class="alert red">🚨 ${esc(e.title)}, ${dayName(e.date)}</div>`).join("");
+  if(rv.length)html+='<h3>Awaiting your RSVP</h3>'+rv.map(e=>`<div class="alert">✉ ${esc(e.title)}, ${short(e.date)} ${fmt12(e.start)} <button class="s" onclick="rsvp('${e.id}','accepted')">Accept</button> <button class="s" onclick="rsvp('${e.id}','declined')">Decline</button></div>`).join("");
+  html+='</div>'+watchHTML()+crunchHTML()+'<div class="week">'+days.map(d=>{const l=onDay(d);return`<div class="day ${d===t?"today":""}" onclick="viewDay='${d}';tab('today')"><h4>${dayName(d)}</h4>${l.length?l.map(e=>`<div class="mini">${kindOf(e)==="exam"?"🚨 ":kindOf(e)==="meet"?"🤝 ":e.isDue?"📌 ":kindOf(e)==="study"?"📚 ":""}${e.isDue?"":fmt12(e.start)+" "}${esc(e.title)}</div>`).join(""):'<span style="color:var(--mut)">Free</span>'}</div>`}).join("")+'</div>';
+  document.getElementById("week").innerHTML=html}
+
+// ---------- School ----------
+function renderSchool(){
+  icsUrl.value=S.canvasUrl;
+  const t=today(),list=S.assign.slice().sort((a,b)=>a.date.localeCompare(b.date));
+  aList.innerHTML=list.map(a=>{const d=daysBetween(t,a.date);const tag=a.done?"":d<0?'<span class="tag red">overdue</span>':d===0?'<span class="tag warn">today</span>':d<=3?`<span class="tag warn">in ${d}d</span>`:"";
+    return`<li><label><input type="checkbox" ${a.done?"checked":""} onchange="setA('${a.id}',this.checked)"> <span class="${a.done?"done":""}">${EXAM.test(a.title)?"🚨 ":""}${esc(a.title)}</span> <small style="color:var(--mut)">${a.course?esc(a.course)+" · ":""}${short(a.date)}${a.time?" "+fmt12(a.time):""} · ${a.src}</small> ${tag}</label><button class="s" onclick="S.assign=S.assign.filter(x=>x.id!=='${a.id}');save();render()">✕</button></li>`}).join("")||'<li style="color:var(--mut)">Nothing yet. Connect Canvas or import a syllabus above.</li>';
+  // study planner
+  const ex=upcomingExams(21);
+  studyPlan.innerHTML=readinessHTML()+(ex.length?ex.map(e=>{const plan=proposeStudy(e);const have=S.events.filter(x=>x.kind==="study"&&x.for===e.id).length;
+    return`<div class="alert info"><b>${esc(e.title)}</b>, ${dayName(e.date)}${have?` <span class="tag grn">${have} session(s) scheduled</span>`:""}<br>${plan.length?"Suggested sessions: "+plan.map(p=>`${short(p.date)} ${fmt12(p.start)}–${fmt12(p.end)}`).join(" · ")+` <button class="g" onclick='acceptStudy(${JSON.stringify(e.id)})'>Add these</button>`:"No free 1-hour gaps found before it. Consider a weekend morning."}</div>`}).join(""):'<p style="color:var(--mut)">No exams in the next 3 weeks. Once Canvas or a syllabus adds some, I\'ll suggest study blocks in your free time.</p>');
+  // grades
+  const courses=[...new Set([...COURSES,...S.grades.map(g=>g.course),...S.assign.map(a=>a.course).filter(Boolean)])];
+  courseList.innerHTML=courses.map(c=>`<option value="${esc(c)}">`).join("");
+  const by={};S.grades.forEach((g,i)=>(by[g.course]=by[g.course]||[]).push({...g,i}));
+  grades.innerHTML=Object.keys(by).map(c=>{const l=by[c],wSum=l.reduce((s,g)=>s+g.w,0),earned=l.reduce((s,g)=>s+g.score/g.max*g.w,0),cur=wSum?earned/wSum*100:0;
+    return`<h3>${esc(c)}: ${cur.toFixed(1)}% ${letter(cur)} <small>(${wSum}% of grade counted)</small></h3><ul class="list">${l.map(g=>`<li><span>${esc(g.name)}: ${g.score}/${g.max} (${(g.score/g.max*100).toFixed(0)}%) · weight ${g.w}%</span><button class="s" onclick="S.grades.splice(${g.i},1);save();render()">✕</button></li>`).join("")}</ul>
+    <div class="row" style="margin-top:6px"><span style="font-size:13px">What do I need on the final?</span><input type="number" placeholder="Final weight %" style="width:120px" id="fw_${c.replace(/\W/g,"")}"><select id="tg_${c.replace(/\W/g,"")}"><option value="93">A</option><option value="90">A-</option><option value="87">B+</option><option value="83" selected>B</option><option value="80">B-</option><option value="77">C+</option><option value="73">C</option></select><button class="s" onclick="needed('${esc(c)}',${earned},${wSum})">Calculate</button><span id="nd_${c.replace(/\W/g,"")}"></span></div>`}).join("")||'<p style="color:var(--mut)">Add a score to start tracking. Weights come from your syllabus.</p>';
+  // locations
+  locs.innerHTML=COURSES.map(c=>`<div class="row"><span style="min-width:230px">${esc(c)}</span><select onchange="S.locs['${c}']=this.value;save();render()"><option value="">(unknown)</option>${BLDG.map(b=>`<option ${S.locs[c]===b?"selected":""}>${b}</option>`).join("")}</select></div>`).join("")}
+const letter=p=>p>=93?"A":p>=90?"A-":p>=87?"B+":p>=83?"B":p>=80?"B-":p>=77?"C+":p>=73?"C":p>=70?"C-":p>=60?"D":"F";
+function needed(c,earned,wSum){const k=c.replace(/\W/g,""),fw=+document.getElementById("fw_"+k).value,tg=+document.getElementById("tg_"+k).value,out=document.getElementById("nd_"+k);
+  if(!fw){out.textContent="Enter the final's weight.";return}const rest=100-wSum-fw;
+  const need=(tg/100*(wSum+fw)-earned)/fw*100;
+  out.innerHTML=` → you need <b>${Math.max(0,need).toFixed(0)}%</b> on the final${need>100?" (above 100%, so out of reach on the final alone 😬)":need<=0?" (you're already there 🎉)":""}${rest>0?` <small>(assumes the other ${rest}% of the grade stays at your current average)</small>`:""}`;}
+function proposeStudy(ex){const out=[];for(let d=1;d<=5&&out.length<3;d++){const day=addDays(ex.date,-d);if(day<today())break;
+  const slots=freeSlots(day,60,9*60,21*60);if(slots.length){const s=slots[slots.length>1?1:0];out.push({date:day,start:s[0],end:hm(Math.min(mins(s[0])+90,mins(s[1])))})}}return out}
+function acceptStudy(id){const e=allEvents().find(x=>x.id===id);proposeStudy(e).forEach(p=>S.events.push({id:"s"+Date.now()+Math.random().toString(36).slice(2,5),...p,title:"📚 Study: "+e.title,loc:"ZSR Library",kind:"study",for:id,src:"local"}));save();render();toast("Study blocks added. Tell me in chat if you want them on Google Calendar too.")}
+function setA(id,v){S.assign.find(a=>a.id===id).done=v;save();render()}
+
+// ---------- Canvas ICS ----------
+function parseICS(txt){
+  const lines=txt.replace(/\r?\n[ \t]/g,"").split(/\r?\n/),out=[];let cur=null;
+  for(const l of lines){if(l==="BEGIN:VEVENT")cur={};else if(l==="END:VEVENT"){if(cur)out.push(cur);cur=null}
+    else if(cur){const i=l.indexOf(":");if(i<0)continue;const key=l.slice(0,i).split(";")[0],val=l.slice(i+1);cur[key]=val.replace(/\\,/g,",").replace(/\\n/g," ").replace(/\\;/g,";")}}
+  return out.map(e=>{const d=e.DTSTART||"";let date,time="";
+    if(/^\d{8}$/.test(d))date=`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`;
+    else if(/^\d{8}T\d{6}Z?$/.test(d)){const iso=`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}T${d.slice(9,11)}:${d.slice(11,13)}:00${d.endsWith("Z")?"Z":""}`;const x=new Date(iso);date=ymd(x);time=pad(x.getHours())+":"+pad(x.getMinutes())}
+    let title=e.SUMMARY||"(untitled)",course="";const m=title.match(/\s*\[([^\]]+)\]\s*$/);if(m){course=m[1];title=title.replace(m[0],"")}
+    return{id:"c"+(e.UID||title+date).replace(/\W/g,"").slice(-40),title,course,date,time,url:e.URL||"",src:"canvas",done:false}}).filter(e=>e.date)}
+function mergeCanvas(items){let n=0;items.forEach(it=>{const ex=S.assign.find(a=>a.id===it.id);if(ex){ex.date=it.date;ex.time=it.time;ex.title=it.title}else{S.assign.push(it);n++}});
+  S.lastSync=new Date().toISOString();save();render();canvasStatus.innerHTML=`<div class="alert info">✅ Synced ${items.length} Canvas items (${n} new). Last sync: ${new Date().toLocaleString()}</div>`}
+async function fetchCanvas(){S.canvasUrl=icsUrl.value.trim();save();if(!S.canvasUrl)return;
+  try{const r=await fetch(S.canvasUrl.replace(/^webcal:/,"https:"));if(!r.ok)throw 0;mergeCanvas(parseICS(await r.text()))}
+  catch(e){canvasStatus.innerHTML=`<div class="alert">The browser blocked a direct download from Canvas (a normal security rule). Open <a href="${esc(S.canvasUrl.replace(/^webcal:/,"https:"))}" target="_blank">your feed link</a>, save the .ics file, and upload it with option B. Or subscribe in Google Calendar (⭐ above) so it syncs on its own.</div>`}}
+icsFile.onchange=async e=>{const f=e.target.files[0];if(f)mergeCanvas(parseICS(await f.text()))};
+
+// ---------- Syllabus ----------
+const MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,sept:9,oct:10,nov:11,dec:12};
+let syPending=[];
+function importSyllabus(){const y=+syYear.value,c=syCourse.value.trim();syPending=[];
+  syTxt.value.split(/\n/).forEach(line=>{let m,d=null;const L=line.trim();if(!L)return;
+    if(m=L.match(/(\d{4})-(\d{1,2})-(\d{1,2})/))d=`${m[1]}-${pad(m[2])}-${pad(m[3])}`;
+    else if(m=L.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/))d=`${m[3]?(m[3].length===2?"20"+m[3]:m[3]):y}-${pad(m[1])}-${pad(m[2])}`;
+    else if(m=L.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sept?|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})\b/i))d=`${y}-${pad(MON[m[1].toLowerCase()])}-${pad(m[2])}`;
+    if(!d)return;const title=L.replace(m[0],"").replace(/^[\s\-–—:|,.]+|[\s\-–—:|,.]+$/g,"")||"Deadline";
+    syPending.push({id:"y"+Date.now()+syPending.length,title,course:c,date:d,time:"",src:"syllabus",done:false})});
+  syPreview.innerHTML=syPending.length?`<h3>Found ${syPending.length} dates. Check them before adding:</h3><ul class="list">${syPending.map(p=>`<li>${EXAM.test(p.title)?"🚨 ":""}${esc(p.title)} <small>${short(p.date)}</small></li>`).join("")}</ul><button class="g" style="margin-top:8px" onclick="S.assign.push(...syPending);syPending=[];save();syPreview.innerHTML='';syTxt.value='';render();toast('Syllabus dates added.')">Add all</button>`:'<p class="hint">No dates found. Try formats like "Nov 10", "11/10" or "2026-11-10".</p>'}
+
+// ---------- RSVP ----------
+function rsvp(id,v){S.rsvp[id]=v;save();render();const e=CAL.find(x=>x.id===id);
+  toast(`Marked <b>${esc(e.title)}</b> as ${v} here. To send the RSVP for real, tell your assistant in chat: <i>"${v==="accepted"?"accept":"decline"} ${esc(e.title)}"</i>.`)}
+
+// ---------- Reminders ----------
+function renderRem(){const t=today();
+  rList.innerHTML=S.rem.map((r,i)=>({r,i})).sort((a,b)=>(a.r.done-b.r.done)||((a.r.date||"9")>(b.r.date||"9")?1:-1)).map(({r,i})=>{
+    const tag=r.done||!r.date?"":r.date<t?'<span class="tag red">overdue</span>':r.date===t?'<span class="tag warn">today</span>':daysBetween(t,r.date)<=2?'<span class="tag warn">soon</span>':"";
+    return`<li><label><input type="checkbox" ${r.done?"checked":""} onchange="S.rem[${i}].done=this.checked;save();render()"> <span class="${r.done?"done":""}">${esc(r.text)}</span> ${r.date?`<small style="color:var(--mut)">· ${short(r.date)}</small>`:""} ${tag}</label><button class="s" onclick="S.rem.splice(${i},1);save();render()">✕</button></li>`}).join("")||'<li style="color:var(--mut)">No reminders yet.</li>'}
+
+// ---------- Habits ----------
+function streak(h){let n=0,d=today();if(!h.days.includes(d))d=addDays(d,-1);while(h.days.includes(d)){n++;d=addDays(d,-1)}return n}
+function renderHabits(){habList.innerHTML=S.habits.map((h,i)=>{const s=streak(h),last14=[...Array(14)].map((_,k)=>addDays(today(),k-13));
+  return`<li><label><input type="checkbox" ${h.days.includes(today())?"checked":""} onchange="toggleHabit(${i})"> <b>${esc(h.name)}</b></label><span class="hab">${last14.map(d=>`<i class="${h.days.includes(d)?"on":""}" title="${d}"></i>`).join("")}</span><span>🔥 ${s} day${s===1?"":"s"} · best ${h.best||s}</span><button class="s" onclick="S.habits.splice(${i},1);save();render()">✕</button></li>`}).join("")||'<li style="color:var(--mut)">Add a habit to start a streak.</li>'}
+function toggleHabit(i){const h=S.habits[i],t=today();h.days=h.days.includes(t)?h.days.filter(d=>d!==t):[...h.days,t];h.best=Math.max(h.best||0,streak(h));save();render()}
+function addHabit(){if(!habNew.value.trim())return;S.habits.push({name:habNew.value.trim(),days:[],best:0});habNew.value="";save();render()}
+
+// ---------- Journal + weekly check-in ----------
+function renderJournal(){
+  const by={};S.journal.forEach(j=>(by[j.ts.slice(0,10)]=by[j.ts.slice(0,10)]||[]).push(j));
+  jList.innerHTML=Object.keys(by).sort().reverse().map(d=>`<h3>${dayName(d)}</h3>`+by[d].slice().reverse().map(j=>`<div class="entry"><small>${new Date(j.ts).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}${j.tag?" · "+j.tag:""}</small>${esc(j.text)}</div>`).join("")).join("")||'<p style="color:var(--mut)">No entries yet.</p>';
+  const wk=[...Array(7)].map((_,i)=>addDays(today(),-i)),sl=S.sleep.filter(s=>wk.includes(s.date)),avg=sl.length?(sl.reduce((a,s)=>a+s.hrs,0)/sl.length).toFixed(1):"–";
+  const moods=S.health.filter(h=>h.type==="mood"&&wk.includes(h.ts.slice(0,10))).map(h=>h.text);
+  const ev=wk.flatMap(onDay).length,doneA=S.assign.filter(a=>a.done&&wk.includes(a.date)).length;
+  const Qs=["What went better than expected this week?","What drained your energy the most?","What's one thing you want to do differently next week?","Who or what are you grateful for this week?","What are you most worried about for next week, and what's one step to handle it?"];
+  const q=Qs[Math.floor(daysBetween("2026-01-04",today())/7)%Qs.length];
+  const isSun=now().getDay()===0;
+  checkin.innerHTML=`<h2>🗒 Weekly check-in ${isSun?'<span class="tag warn">it\'s Sunday, check-in time</span>':""}</h2>
+   <div class="stats"><div class="stat"><b>${avg}</b><span>avg sleep (h)</span></div><div class="stat"><b>${ev}</b><span>calendar items</span></div><div class="stat"><b>${doneA}</b><span>assignments done</span></div><div class="stat"><b>${S.habits.reduce((a,h)=>a+h.days.filter(d=>wk.includes(d)).length,0)}</b><span>habit check-ins</span></div></div>
+   ${moods.length?`<p style="font-size:14px">Moods you logged: ${moods.map(esc).join(", ")}</p>`:""}
+   <p><b>Reflection:</b> ${q}</p><textarea id="ciTxt" placeholder="Your answer…" style="min-height:60px"></textarea>
+   <button class="p" style="margin-top:6px" onclick="if(ciTxt.value.trim()){S.journal.push({ts:new Date().toISOString(),text:'Q: ${q.replace(/'/g,"\\'")}\\n'+ciTxt.value.trim(),tag:'weekly check-in'});save();render();toast('Check-in saved to your journal.')}">Save check-in</button>`}
+
+// ---------- Health ----------
+function lastSleep(){const w=S.whoop.filter(x=>x.sleep!=null).slice(-1)[0],m=S.sleep.slice().sort((a,b)=>a.date.localeCompare(b.date)).slice(-1)[0];
+  if(m&&(!w||m.date>=w.date))return m;return w?{date:w.date,hrs:+(w.sleep).toFixed(1),q:""}:null}
+function sleepSeries(){const m={};S.whoop.forEach(w=>{if(w.sleep!=null)m[w.date]={date:w.date,hrs:+w.sleep.toFixed(1)}});S.sleep.forEach(s=>m[s.date]=s);return Object.values(m).sort((a,b)=>a.date.localeCompare(b.date))}
+function bedtimeHTML(){const tm=addDays(today(),1),first=timed(onDay(tm))[0],exam=onDay(tm).find(e=>kindOf(e)==="exam");
+  if(!first)return`<h2>🌙 Bedtime</h2><p style="margin:0">Nothing scheduled early tomorrow. Still, aim for 8 hours.</p>`;
+  const wake=mins(first.start)-75,bed=(wake-8*60+1440)%1440;
+  return`<h2>🌙 Bedtime nudge</h2><p style="margin:0">Tomorrow starts with <b>${esc(first.title)}</b> at ${fmt12(first.start)}. To get 8 hours, wake up by <b>${fmt12(hm(wake))}</b> and be asleep by <b>${fmt12(hm(bed))}</b>.${exam?` 🚨 You have <b>${esc(exam.title)}</b> tomorrow, so sleep will help more than cramming.`:""}</p>`}
+function renderHealth(){
+  const ser=sleepSeries(),l7=ser.slice(-7),avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0,ah=avg(l7.map(s=>s.hrs)),qs=l7.filter(s=>s.q).map(s=>+s.q);
+  sStats.innerHTML=`<div class="stat"><b>${ah?ah.toFixed(1):"–"}</b><span>avg hrs</span></div><div class="stat"><b>${qs.length?avg(qs).toFixed(1):"–"}</b><span>quality /5</span></div><div class="stat"><b>${l7.filter(s=>s.hrs<7).length}</b><span>nights &lt;7h</span></div>`;
+  sBar.innerHTML=l7.map(s=>`<div style="height:${s.hrs/10*100}%;background:${s.hrs<6?"var(--red)":s.hrs<7?"var(--gold)":"var(--blue)"}"><em>${s.hrs}</em><span>${s.date.slice(5)}</span></div>`).join("")||'<p style="color:var(--mut)">Log a night or import Whoop data.</p>';
+  bedtime.innerHTML=bedtimeHTML();
+  const w7=S.whoop.filter(w=>w.recovery!=null).slice(-7);
+  wStats.innerHTML=S.whoop.length?`<div class="stat"><b>${w7.length?avg(w7.map(w=>w.recovery)).toFixed(0)+"%":"–"}</b><span>avg recovery</span></div><div class="stat"><b>${avg(S.whoop.slice(-7).filter(w=>w.hrv).map(w=>w.hrv)).toFixed(0)||"–"}</b><span>avg HRV (ms)</span></div><div class="stat"><b>${avg(S.whoop.slice(-7).filter(w=>w.strain).map(w=>w.strain)).toFixed(1)||"–"}</b><span>avg strain</span></div>`:"";
+  wBar.innerHTML=w7.map(w=>`<div style="height:${w.recovery}%;background:${w.recovery>=67?"var(--grn)":w.recovery>=34?"var(--gold)":"var(--red)"}"><em>${w.recovery}</em><span>${w.date.slice(5)}</span></div>`).join("")||'<p style="color:var(--mut)">No Whoop data yet.</p>';
+  insights.innerHTML=buildInsights().map(i=>`<div class="alert info">💡 ${i}</div>`).join("")||'<p style="color:var(--mut)">Log a few nights of sleep, or import Whoop data, and I\'ll start spotting patterns between your schedule and how you feel.</p>';
+  hList.innerHTML=S.health.map((h,i)=>({h,i})).reverse().map(({h,i})=>`<li><span><span class="tag">${h.type}</span> ${esc(h.text)} <small style="color:var(--mut)">· ${new Date(h.ts).toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</small></span><button class="s" onclick="S.health.splice(${i},1);save();render()">✕</button></li>`).join("")||'<li style="color:var(--mut)">No notes yet.</li>'}
+function buildInsights(){
+  const out=[],ser=sleepSeries(),l7=ser.slice(-7),avg=a=>a.reduce((s,x)=>s+x,0)/a.length;
+  if(l7.length>=3){const a=avg(l7.map(s=>s.hrs));out.push(a<7?`You're averaging <b>${a.toFixed(1)}h</b> of sleep, below the 7–9h target.`:`Solid: averaging <b>${a.toFixed(1)}h</b> of sleep.`);
+    const sd=Math.sqrt(avg(l7.map(s=>(s.hrs-a)**2)));if(sd>1.5)out.push(`Your sleep swings by about ±${sd.toFixed(1)}h night to night. A steady bedtime usually helps more than catch-up sleep.`)}
+  // workload vs recovery/sleep: load = events (and tutoring) on the previous day
+  const load=d=>timed(onDay(d)).length,tut=d=>onDay(d).filter(e=>kindOf(e)==="meet").length;
+  const rec=S.whoop.filter(w=>w.recovery!=null);
+  if(rec.length>=4){const hi=rec.filter(w=>load(addDays(w.date,-1))>=4),lo=rec.filter(w=>load(addDays(w.date,-1))<4);
+    if(hi.length>=2&&lo.length>=2){const d=avg(lo.map(w=>w.recovery))-avg(hi.map(w=>w.recovery));if(Math.abs(d)>=5)out.push(`After busy days (4+ events), your recovery is <b>${Math.abs(d).toFixed(0)} points ${d>0?"lower":"higher"}</b> than after lighter days.`)}
+    const t2=rec.filter(w=>tut(addDays(w.date,-1))>=2),t0=rec.filter(w=>tut(addDays(w.date,-1))===0);
+    if(t2.length>=2&&t0.length>=2){const d=avg(t0.map(w=>w.recovery))-avg(t2.map(w=>w.recovery));if(d>=5)out.push(`Recovery drops about <b>${d.toFixed(0)} points</b> after days with 2+ tutoring sessions. Try spacing them out.`)}
+    const lowStreak=rec.slice(-3).every(w=>w.recovery<34);if(lowStreak)out.push("🔴 Your recovery has been in the red 3 days running. Lighten the load if you can, and if you also feel unwell, check in with Student Health.")}
+  if(ser.length>=4){const hi=ser.filter(s=>load(s.date)>=4),lo=ser.filter(s=>load(s.date)<4);
+    if(hi.length>=2&&lo.length>=2){const d=avg(lo.map(s=>s.hrs))-avg(hi.map(s=>s.hrs));if(Math.abs(d)>=0.5)out.push(`On busy days you sleep <b>${Math.abs(d).toFixed(1)}h ${d>0?"less":"more"}</b> that night than on light days.`)}}
+  const bad=S.health.filter(h=>/tired|exhaust|fatigue|headache|sick|stress|anxious|overwhelm/i.test(h.text)&&daysBetween(h.ts.slice(0,10),today())<=7).length;
+  if(bad>=3)out.push(`You've logged fatigue, stress or symptoms <b>${bad}×</b> this week. Keep an eye on it, and if it keeps up, Student Health or the counseling center can help.`);
+  return out}
+whoopFile.onchange=async e=>{let n=0;for(const f of e.target.files){const rows=csv(await f.text());if(!rows.length)continue;const H=Object.keys(rows[0]);
+  const col=re=>H.find(h=>re.test(h));const cDate=col(/cycle start|sleep onset|^date/i),cRec=col(/recovery score/i),cHrv=col(/heart rate variability|hrv/i),cStr=col(/day strain|strain/i),cSl=col(/asleep duration/i),cPerf=col(/sleep performance/i);
+  rows.forEach(r=>{if(!r[cDate])return;const dt=new Date(r[cDate].replace(" ","T"));if(isNaN(dt))return;
+    // sleep belongs to the night before the morning it ends; use wake date
+    let d=ymd(dt);if(cSl&&!cRec&&dt.getHours()>=12)d=addDays(d,1);
+    let w=S.whoop.find(x=>x.date===d);if(!w){w={date:d};S.whoop.push(w);n++}
+    if(cRec&&r[cRec])w.recovery=+r[cRec];if(cHrv&&r[cHrv])w.hrv=+r[cHrv];if(cStr&&r[cStr])w.strain=+r[cStr];if(cSl&&r[cSl])w.sleep=+r[cSl]/60;if(cPerf&&r[cPerf])w.perf=+r[cPerf]})}
+  S.whoop.sort((a,b)=>a.date.localeCompare(b.date));save();render();whoopStatus.innerHTML=`<div class="alert info">✅ Imported Whoop data: ${S.whoop.length} days total (${n} new).</div>`};
+function csv(t){const L=t.trim().split(/\r?\n/),sp=l=>{const o=[];let c="",q=false;for(const ch of l){if(ch==='"')q=!q;else if(ch===","&&!q){o.push(c);c=""}else c+=ch}o.push(c);return o};
+  const H=sp(L[0]).map(h=>h.trim());return L.slice(1).map(l=>{const v=sp(l),o={};H.forEach((h,i)=>o[h]=(v[i]||"").trim());return o})}
+
+
+// ================= Weather & News =================
+const LAT=36.1335,LON=-80.2775; // Wake Forest University, Winston-Salem NC
+const WX={0:["☀️","Clear"],1:["🌤","Mostly clear"],2:["⛅","Partly cloudy"],3:["☁️","Overcast"],45:["🌫","Fog"],48:["🌫","Fog"],51:["🌦","Light drizzle"],53:["🌦","Drizzle"],55:["🌧","Heavy drizzle"],56:["🌧","Freezing drizzle"],57:["🌧","Freezing drizzle"],61:["🌧","Light rain"],63:["🌧","Rain"],65:["🌧","Heavy rain"],66:["🌧","Freezing rain"],67:["🌧","Freezing rain"],71:["🌨","Light snow"],73:["🌨","Snow"],75:["❄️","Heavy snow"],77:["🌨","Snow grains"],80:["🌦","Showers"],81:["🌧","Showers"],82:["⛈","Heavy showers"],85:["🌨","Snow showers"],86:["🌨","Snow showers"],95:["⛈","Thunderstorm"],96:["⛈","Thunderstorm"],99:["⛈","Thunderstorm"]};
+const wx=c=>WX[c]||["🌡","—"];
+let newsTab="top";
+async function loadWeather(force){
+  const c=S.wxCache;if(!force&&c&&Date.now()-c.t<30*60e3)return;
+  try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America%2FNew_York&forecast_days=2`);
+    S.wxCache={t:Date.now(),d:await r.json()};S.wxErr="";save()}catch(e){S.wxErr="Couldn't reach the weather service. Showing the last saved forecast."}}
+const FEEDS={
+  nyt:{name:"The New York Times",short:"NYT",url:"https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",color:"#000"},
+  bloomberg:{name:"Bloomberg",short:"Bloomberg",url:"https://feeds.bloomberg.com/markets/news.rss",color:"#5b2be0"},
+  atlantic:{name:"The Atlantic",short:"Atlantic",url:"https://www.theatlantic.com/feed/all/",color:"#c8102e"},
+  nytbiz:{name:"NYT Business",short:"NYT Business",url:"https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",color:"#000"},
+  bbgpol:{name:"Bloomberg Politics",short:"Bloomberg",url:"https://feeds.bloomberg.com/politics/news.rss",color:"#5b2be0"}};
+async function fetchFeed(k){const r=await fetch("https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(FEEDS[k].url));const j=await r.json();if(j.status!=="ok")throw 0;
+  return j.items.slice(0,8).map(i=>{const t=document.createElement("div");t.innerHTML=i.description||"";return{title:i.title.replace(/&amp;/g,"&"),url:i.link,date:i.pubDate,desc:t.textContent.trim().slice(0,160),src:k}})}
+async function loadNews(force){
+  const c=S.newsCache;if(!force&&c&&c.v===2&&Date.now()-c.t<30*60e3)return;
+  const out={v:2,t:Date.now()};let ok=0;
+  await Promise.all(Object.keys(FEEDS).map(async k=>{try{out[k]=await fetchFeed(k);ok++}catch(e){out[k]=(c&&c[k])||[]}}));
+  if(ok){S.newsCache=out;S.newsErr=ok<Object.keys(FEEDS).length?"Some sources didn't load. Showing what's available.":""}else S.newsErr="Couldn't load news (are you offline?). Showing the last saved headlines.";save()}
+const ago=d=>{const m=Math.round((Date.now()-new Date(d.replace(" ","T")+(/[zZ+]/.test(d)?"":"Z")))/6e4);return m<60?m+"m ago":m<1440?Math.round(m/60)+"h ago":Math.round(m/1440)+"d ago"};
+function newsList(items,n=6){return items.length?`<ul class="list news">${items.slice(0,n).map(a=>`<li><span class="src" style="background:${FEEDS[a.src].color}">${FEEDS[a.src].short}</span> <a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a> <small style="color:var(--mut)">· ${ago(a.date)}</small>${a.desc?`<div style="font-size:12px;color:var(--mut);margin-top:2px">${esc(a.desc)}${a.desc.length>=160?"…":""}</div>`:""}</li>`).join("")}</ul>`:'<p style="color:var(--mut)">Loading headlines…</p>'}
+function wxTips(d){
+  const tips=[],day=d.daily,tmin=day.temperature_2m_min[0],tmax=day.temperature_2m_max[0],rain=day.precipitation_probability_max[0];
+  if(rain>=50)tips.push(`☂️ ${rain}% chance of rain today, so bring an umbrella.`);else if(rain>=30)tips.push(`🌂 ${rain}% chance of rain. Maybe toss an umbrella in your bag.`);
+  if(tmin<40)tips.push("🧥 It's cold this morning. Wear a real jacket.");else if(tmax<60)tips.push("🧥 Bring a jacket or hoodie.");else if(tmax>=85)tips.push("💧 It's hot out. Bring water.");
+  // rain during your walks to class
+  const t=today(),hrs=d.hourly.time.map((x,i)=>({x,p:d.hourly.precipitation_probability[i]})).filter(o=>o.x.startsWith(t));
+  timed(onDay(t)).forEach(e=>{const hh=e.start.slice(0,2),o=hrs.find(o=>o.x.slice(11,13)===hh);if(o&&o.p>=50)tips.push(`🚶 Rain likely (${o.p}%) around <b>${fmt12(e.start)}</b> when you head to ${esc(e.title)}.`)});
+  // early tomorrow (hockey)
+  const tm=addDays(t,1),first=timed(onDay(tm))[0];
+  if(first&&mins(first.start)<8*60){const i=d.hourly.time.findIndex(x=>x===tm+"T"+first.start.slice(0,2)+":00");if(i>=0)tips.push(`🏒 Tomorrow at ${fmt12(first.start)} it'll be about <b>${Math.round(d.hourly.temperature_2m[i])}°F</b> for ${esc(first.title)}.${d.hourly.temperature_2m[i]<40?" Bundle up.":""}`)}
+  return tips}
+function renderNW(){
+  const c=S.wxCache,n=S.newsCache;let w='<p style="color:var(--mut)">Loading weather…</p>';
+  if(c&&c.d&&c.d.current){const d=c.d,cur=d.current,dy=d.daily,[ic,lbl]=wx(cur.weather_code),t=today();
+    const cls=new Set(timed(onDay(t)).map(e=>e.start.slice(0,2)));
+    const hrs=d.hourly.time.map((x,i)=>({x,i})).filter(o=>o.x.startsWith(t)&&+o.x.slice(11,13)>=7&&+o.x.slice(11,13)<=22&&+o.x.slice(11,13)%2===1||o.x.startsWith(t)&&cls.has(o.x.slice(11,13)));
+    const uniq=[...new Map(hrs.map(o=>[o.x,o])).values()].sort((a,b)=>a.x.localeCompare(b.x));
+    const tips=wxTips(d);
+    w=`<div class="wx"><div class="big">${ic}</div><div><div class="tmp">${Math.round(cur.temperature_2m)}°F</div><div style="color:var(--mut);font-size:13px">${lbl} · feels like ${Math.round(cur.apparent_temperature)}° · wind ${Math.round(cur.wind_speed_10m)} mph</div></div>
+      <div style="font-size:14px">High <b>${Math.round(dy.temperature_2m_max[0])}°</b> · Low <b>${Math.round(dy.temperature_2m_min[0])}°</b><br>Rain chance <b>${dy.precipitation_probability_max[0]}%</b><br><span style="color:var(--mut);font-size:12px">🌅 ${fmt12(dy.sunrise[0].slice(11))} · 🌇 ${fmt12(dy.sunset[0].slice(11))}</span></div>
+      <div style="font-size:13px;color:var(--mut)">Tomorrow: ${wx(dy.weather_code[1])[0]} ${Math.round(dy.temperature_2m_max[1])}° / ${Math.round(dy.temperature_2m_min[1])}°, ${dy.precipitation_probability_max[1]}% rain</div></div>
+      <div class="hours">${uniq.map(o=>`<div class="${cls.has(o.x.slice(11,13))?"cls":""}" title="${cls.has(o.x.slice(11,13))?"You have something scheduled":""}">${fmt12(o.x.slice(11,16)).replace(":00","")}<b>${wx(d.hourly.weather_code[o.i])[0]} ${Math.round(d.hourly.temperature_2m[o.i])}°</b>💧${d.hourly.precipitation_probability[o.i]}%</div>`).join("")}</div>
+      ${tips.length?`<div style="margin-top:10px">${tips.map(x=>`<div class="alert info" style="margin-bottom:6px">${x}</div>`).join("")}</div>`:""}
+      <div class="hint">Winston-Salem, NC · blue-outlined hours = when you have something scheduled · updated ${new Date(c.t).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}</div>`}
+  if(S.wxErr)w+=`<div class="hint">⚠️ ${S.wxErr}</div>`;
+  const tabs=[["top","⭐ Top"],["nyt","NYT"],["bloomberg","Bloomberg"],["atlantic","The Atlantic"]];
+  let list=[];if(n&&n.v===2){if(newsTab==="top"){const mix=[];for(let i=0;i<4;i++)["nyt","bloomberg","atlantic","nytbiz"].forEach(k=>{if(n[k]&&n[k][i])mix.push(n[k][i])});list=mix}else list=n[newsTab]||[]}
+  const nh=`<div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">📰 Today's news</h2><span class="seg">${tabs.map(([k,l])=>`<button class="${newsTab===k?"on":""}" onclick="newsTab='${k}';renderNW()">${l}</button>`).join("")}</span></div>
+    ${newsList(list,newsTab==="top"?8:7)}
+    <div class="hint">Live from The New York Times, Bloomberg and The Atlantic${n?` · updated ${new Date(n.t).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}`:""} · some articles may need a subscription (WFU students can get free NYT access through ZSR Library) ${S.newsErr?"· ⚠️ "+S.newsErr:""}</div>`;
+  nw.innerHTML=`<div class="grid2"><div class="card"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">🌤 Weather</h2><button class="s" onclick="refreshNW(true)">↻ Refresh</button></div>${w}</div><div class="card">${nh}</div></div>`}
+async function refreshNW(force){renderNW();await Promise.all([loadWeather(force),loadNews(force)]);renderNW();renderToday()}
+
+// ================= Markets (TradingView embeds) =================
+const WATCH_DEFAULT=[["NASDAQ:NVDA","Nvidia: AI chips, the market's biggest mover"],["NASDAQ:AAPL","Apple"],["NASDAQ:MSFT","Microsoft"],["NASDAQ:AMZN","Amazon"],["NASDAQ:GOOGL","Alphabet (Google)"],["NYSE:JPM","JPMorgan: largest US bank"],["NYSE:GS","Goldman Sachs"],["NYSE:V","Visa: payments"],["NYSE:XYZ","Block (Square/Cash App): fintech"],["NASDAQ:PYPL","PayPal: fintech"],["NASDAQ:COIN","Coinbase: crypto exchange"],["NASDAQ:HOOD","Robinhood: retail investing"]];
+S.watch=S.watch||WATCH_DEFAULT.map(w=>w[0]);
+function tv(el,name,cfg){el=document.getElementById(el);if(!el)return;el.innerHTML='<div class="tradingview-widget-container" style="height:100%"><div class="tradingview-widget-container__widget" style="height:100%"></div></div>';
+  const s=document.createElement("script");s.src=`https://s3.tradingview.com/external-embedding/embed-widget-${name}.js`;s.async=true;s.innerHTML=JSON.stringify({colorTheme:"light",isTransparent:true,locale:"en",...cfg});el.firstChild.appendChild(s)}
+let mktBuilt=false;
+function renderMarkets(){
+  if(!mktBuilt){mktBuilt=true;
+    tv("tvTape","ticker-tape",{symbols:[{proName:"FOREXCOM:SPXUSD",title:"S&P 500"},{proName:"FOREXCOM:NSXUSD",title:"Nasdaq 100"},{proName:"FOREXCOM:DJI",title:"Dow 30"},{proName:"AMEX:IWM",title:"Russell 2000"},{proName:"TVC:US10Y",title:"10Y Yield"},{proName:"TVC:VIX",title:"VIX"},{proName:"TVC:GOLD",title:"Gold"},{proName:"TVC:USOIL",title:"Oil"},{proName:"BITSTAMP:BTCUSD",title:"Bitcoin"},{proName:"FX:EURUSD",title:"EUR/USD"}],showSymbolLogo:true,displayMode:"adaptive"});
+    tv("tvOverview","market-overview",{dateRange:"1D",showChart:true,width:"100%",height:"100%",showSymbolLogo:true,tabs:[
+      {title:"Indices",symbols:[{s:"FOREXCOM:SPXUSD",d:"S&P 500"},{s:"FOREXCOM:NSXUSD",d:"Nasdaq 100"},{s:"FOREXCOM:DJI",d:"Dow 30"},{s:"AMEX:IWM",d:"Russell 2000"},{s:"TVC:VIX",d:"VIX (fear index)"}]},
+      {title:"Rates",symbols:[{s:"TVC:US02Y",d:"US 2-Year"},{s:"TVC:US10Y",d:"US 10-Year"},{s:"TVC:US30Y",d:"US 30-Year"},{s:"TVC:DXY",d:"US Dollar Index"}]},
+      {title:"Commodities",symbols:[{s:"TVC:GOLD",d:"Gold"},{s:"TVC:SILVER",d:"Silver"},{s:"TVC:USOIL",d:"Crude Oil"},{s:"TVC:UKOIL",d:"Brent"}]},
+      {title:"Crypto",symbols:[{s:"BITSTAMP:BTCUSD",d:"Bitcoin"},{s:"BITSTAMP:ETHUSD",d:"Ethereum"},{s:"COINBASE:SOLUSD",d:"Solana"}]},
+      {title:"Sectors",symbols:[{s:"AMEX:XLK",d:"Tech"},{s:"AMEX:XLF",d:"Financials"},{s:"AMEX:XLE",d:"Energy"},{s:"AMEX:XLV",d:"Health Care"},{s:"AMEX:XLY",d:"Consumer"}]}]});
+    tv("tvMovers","hotlists",{exchange:"US",dataSource:"SPX500",showChart:true,width:"100%",height:"100%",dateRange:"1D",showSymbolLogo:true});
+    tv("tvEcon","events",{width:"100%",height:"100%",importanceFilter:"0,1",countryFilter:"us"});
+  }
+  renderWatch();renderMktNews()}
+function renderWatch(){wl.innerHTML=S.watch.map((s,i)=>{const note=(WATCH_DEFAULT.find(w=>w[0]===s)||[])[1]||"";return`<div class="item"><button class="s" onclick="S.watch.splice(${i},1);save();renderWatch()" title="Remove">✕</button>${note?`<div style="font-size:11px;color:var(--mut);padding:6px 10px 0">${esc(note)}</div>`:""}<div id="tvw${i}" style="height:190px"></div></div>`}).join("")||'<p style="color:var(--mut)">Add a ticker to start your watchlist.</p>';
+  S.watch.forEach((s,i)=>tv("tvw"+i,"mini-symbol-overview",{symbol:s,width:"100%",height:"100%",dateRange:"1M",trendLineColor:"rgba(41,98,255,1)",underLineColor:"rgba(41,98,255,0.15)",chartOnly:false,noTimeScale:false}))}
+function addTicker(){const t=wlAdd.value.trim().toUpperCase();if(!t)return;if(!S.watch.some(s=>s.endsWith(":"+t)||s===t))S.watch.unshift(t);wlAdd.value="";save();renderWatch()}
+function resetWatch(){S.watch=WATCH_DEFAULT.map(w=>w[0]);save();renderWatch()}
+function renderMktNews(){const n=S.newsCache;if(!n||n.v!==2){mktNews.innerHTML='<p style="color:var(--mut)">Loading…</p>';loadNews(false).then(renderMktNews);return}
+  const mix=[];for(let i=0;i<6;i++)["bloomberg","nytbiz"].forEach(k=>{if(n[k]&&n[k][i])mix.push(n[k][i])});mktNews.innerHTML=newsList(mix,10)}
+
+// ================= Agent Watch: proactive scan across ALL sources =================
+const STUDY_TARGET=e=>/FINAL:|examen final|final (exam|assessment)/i.test(e.title)?6:/exam|examen|test|midterm/i.test(e.title)?3:1.5;
+const courseKey=t=>{t=t.toLowerCase();return /french|frh|examen|chapitre/.test(t)?"french":/mth|math|mastery/.test(t)?"math":/fys|fintech|presentation/.test(t)?"fys":/acc|accounting/.test(t)?"acc":""};
+function studyHours(ex){const k=courseKey(ex.title);return allEvents().filter(e=>kindOf(e)==="study"&&e.date<ex.date&&daysBetween(e.date,ex.date)<=7&&courseKey(e.title)===k).reduce((s,e)=>s+(mins(e.end)-mins(e.start))/60,0)}
+function agentScan(){
+  const t=today(),end=addDays(t,40),out=[],ev=allEvents().filter(e=>e.date>=t&&e.date<=end);
+  const days=[...new Set(ev.map(e=>e.date))];
+  // 1. double-bookings
+  days.forEach(d=>conflicts(onDay(d)).forEach(([a,b])=>out.push({lvl:"red",cat:"Double-booked",date:d,txt:`<b>${esc(a.title)}</b> and <b>${esc(b.title)}</b> overlap on ${short(d)} (${fmt12(a.start)} / ${fmt12(b.start)}).`,fix:"Pick one. The conflict fixer on that day drafts the email."})));
+  // 2. deadlines while traveling
+  const away=new Set(ev.filter(e=>e.kind==="trip").map(e=>e.date));
+  ev.filter(e=>(e.isDue||kindOf(e)==="exam")&&away.has(e.date)).forEach(e=>{const trip=ev.find(x=>x.kind==="trip"&&x.date===e.date);out.push({lvl:"red",cat:"Due while you're away",date:e.date,txt:`<b>${esc(e.title)}</b> is due ${short(e.date)}, during <b>${esc(trip.title.replace(/^\W+/,""))}</b>.`,fix:`Finish it before you leave (${short(addDays([...away].sort()[0],-1))}).`})});
+  // 3. same-item time mismatch between sources (e.g. Canvas title vs Canvas time)
+  [...CANVAS_REF,...S.assign].forEach(a=>{const m=(a.title||"").match(/\((\d{1,2})(?::(\d{2}))?\s*(AM|PM)\)/i);if(!m||!a.time)return;let hh=+m[1]%12+(/pm/i.test(m[3])?12:0);const said=pad(hh)+":"+(m[2]||"00");
+    if(said!==a.time&&!out.some(o=>o.cat==="Conflicting times"&&o.date===a.date))out.push({lvl:"warn",cat:"Conflicting times",date:a.date,txt:`<b>${esc(a.title.replace(/\s*\(.*\)/,""))}</b> (${esc(a.course||"")}) says ${fmt12(said)} in the title but Canvas lists ${fmt12(a.time)}.`,fix:"Ask your professor which time is right."})});
+  // 4. exams without enough study time
+  ev.filter(e=>kindOf(e)==="exam"&&!e.isDue||kindOf(e)==="exam"&&/final|examen|test/i.test(e.title)).forEach(e=>{const hrs=studyHours(e),tg=STUDY_TARGET(e);if(hrs<tg)out.push({lvl:hrs?"warn":"red",cat:"Not enough study time",date:e.date,txt:`<b>${esc(e.title)}</b> on ${short(e.date)}: ${hrs?hrs.toFixed(1)+" hrs":"no time"} set aside to study (goal: ${tg} hrs).`,fix:"Open Canvas & School → Study planner to add sessions."})});
+  // 5. early practice the morning of an exam
+  days.forEach(d=>{const l=timed(onDay(d)),early=l.find(e=>mins(e.start)<7*60),ex=l.find(e=>kindOf(e)==="exam");if(early&&ex)out.push({lvl:"warn",cat:"Early morning before an exam",date:d,txt:`${esc(early.title.replace(/^\W+/,""))} at ${fmt12(early.start)}, then <b>${esc(ex.title)}</b> at ${fmt12(ex.start)}.`,fix:`Be asleep by ${fmt12(hm((mins(early.start)-60-8*60+1440)%1440))} the night before.`})});
+  // 6. crunch days (3+ deadlines/exams)
+  days.forEach(d=>{const n=onDay(d).filter(e=>e.isDue||kindOf(e)==="exam").length;if(n>=3)out.push({lvl:"warn",cat:"Heavy day",date:d,txt:`${n} deadlines or exams on ${short(d)}: ${onDay(d).filter(e=>e.isDue||kindOf(e)==="exam").map(e=>esc(e.title.replace(/\s*\[.*\]/,""))).join(", ")}.`,fix:"Start these a few days early."})});
+  // 7. invites waiting
+  ev.filter(e=>e.rsvp&&!S.rsvp[e.id]).forEach(e=>out.push({lvl:"info",cat:"Needs an answer",date:e.date,txt:`Invite: <b>${esc(e.title)}</b> (${short(e.date)} ${fmt12(e.start)}).`,fix:"Accept or decline so the organizer knows."}));
+  return out.sort((a,b)=>({red:0,warn:1,info:2}[a.lvl]-{red:0,warn:1,info:2}[b.lvl])||a.date.localeCompare(b.date))}
+function watchHTML(limit){const f=agentScan(),r=f.filter(x=>x.lvl==="red").length;
+  const srcN=`${CAL.length} calendar events · ${S.assign.length} Canvas items${S.whoop.length?` · ${S.whoop.length} Whoop days`:""}${S.sleep.length?` · ${S.sleep.length} sleep logs`:""}`;
+  return `<div class="card" style="border:2px solid var(--gold)"><div class="row" style="justify-content:space-between"><h2 style="margin:0">🔎 Agent Watch: ${f.length} things you didn't have to ask about</h2><span class="tag ${r?"red":"grn"}">${r} urgent</span></div>
+   <p class="hint" style="margin:4px 0 10px">I check your calendar, Canvas, sleep and Whoop data together every time you open this. Scanned: ${srcN}. Next 40 days.</p>
+   ${f.slice(0,limit||99).map(x=>`<div class="alert ${x.lvl==="red"?"red":x.lvl==="info"?"info":""}"><b>${x.cat}</b> · ${x.txt}<br><small>→ ${x.fix}</small></div>`).join("")||'<p>Nothing to flag. You\'re in good shape.</p>'}
+   ${limit&&f.length>limit?`<button class="s" onclick="tab('week')">See all ${f.length} →</button>`:""}</div>`}
+// ================= Crunch-week heatmap =================
+function crunchHTML(){const t=today(),mon=addDays(t,-((new Date(t+"T12:00").getDay()+6)%7));
+  const wks=[...Array(6)].map((_,i)=>{const s=addDays(mon,i*7),ds=[...Array(7)].map((_,j)=>addDays(s,j)),l=ds.flatMap(onDay);
+    const ex=l.filter(e=>kindOf(e)==="exam").length,du=l.filter(e=>e.isDue&&kindOf(e)!=="exam").length,ev=timed(l).filter(e=>kindOf(e)!=="exam"&&kindOf(e)!=="study").length,away=l.some(e=>e.kind==="trip");
+    return{s,ex,du,ev,away,score:ev+2*du+5*ex+(away?6:0)}});
+  const mx=Math.max(...wks.map(w=>w.score),1);
+  return `<div class="card"><h2>📊 Crunch weeks ahead</h2><p class="hint" style="margin-top:0">Score = classes and events + 2× each deadline + 5× each exam (+6 if you're traveling).</p>
+   ${wks.map(w=>`<div class="row" style="margin-bottom:6px"><span style="min-width:96px;font-size:13px">Wk of ${short(w.s).replace(/^\w+, /,"")}</span><div style="flex:1;background:#eee;border-radius:6px;height:22px;position:relative"><div style="width:${w.score/mx*100}%;height:100%;border-radius:6px;background:${w.score/mx>.8?"var(--red)":w.score/mx>.55?"var(--gold)":"var(--blue)"}"></div></div><span style="min-width:230px;font-size:12px;color:var(--mut)">${w.ex} exams · ${w.du} due · ${w.ev} events${w.away?" · 🚌 trip":""}</span></div>`).join("")}</div>`}
+// ================= Exam readiness =================
+function readinessHTML(){const ex=upcomingExams(40).filter(e=>!e.isDue||/final|examen|test/i.test(e.title));
+  return ex.length?`<h3>Exam readiness</h3>`+ex.map(e=>{const h=studyHours(e),tg=STUDY_TARGET(e),p=Math.min(100,h/tg*100);return`<div class="row" style="margin-bottom:6px"><span style="min-width:280px;font-size:13px">${esc(e.title.replace(/^\W+/,""))} <small style="color:var(--mut)">${short(e.date)}</small></span><div style="flex:1;background:#eee;border-radius:6px;height:14px"><div style="width:${p}%;height:100%;border-radius:6px;background:${p>=100?"var(--grn)":p>=50?"var(--gold)":"var(--red)"}"></div></div><span style="font-size:12px;min-width:90px">${h.toFixed(1)} / ${tg} hrs</span></div>`}).join(""):""}
+
+function render(){renderToday();renderWeek();renderSchool();renderRem();renderHabits();renderJournal();renderHealth()}
+
+// ================= Actions =================
+function shift(n){viewDay=addDays(viewDay,n);render()}
+function tab(t){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));["today","week","school","rem","habits","journal","health","markets"].forEach(s=>document.getElementById(s).classList.toggle("hide",s!==t));nw.classList.toggle("hide",t!=="today");if(t==="markets")renderMarkets();render();window.scrollTo(0,0)}
+nav.onclick=e=>{if(e.target.dataset.t)tab(e.target.dataset.t)};
+function addEvent(){const t=eT.value.trim(),s=eS.value;if(!t||!s)return alert("Please enter a title and start time.");S.events.push({id:"l"+Date.now(),date:viewDay,start:s,end:eE.value||hm(mins(s)+60),title:t,loc:eL.value,kind:"",src:"local"});save();render()}
+function delEvent(id){S.events=S.events.filter(e=>e.id!==id);save();render()}
+function addRem(){if(!rTxt.value.trim())return;S.rem.push({text:rTxt.value.trim(),date:rDate.value,done:false});rTxt.value="";save();render()}
+function addJournal(){if(!jTxt.value.trim())return;S.journal.push({ts:new Date().toISOString(),text:jTxt.value.trim()});jTxt.value="";save();render()}
+function addSleep(){const h=parseFloat(sHrs.value);if(isNaN(h))return alert("Enter hours slept.");const d=sDate.value||today();S.sleep=S.sleep.filter(s=>s.date!==d);S.sleep.push({date:d,hrs:h,q:sQ.value});save();render()}
+function addHealth(){if(!hTxt.value.trim())return;S.health.push({ts:new Date().toISOString(),type:hType.value,text:hTxt.value.trim()});hTxt.value="";save();render()}
+function addGrade(){const g={course:gCourse.value.trim(),name:gName.value.trim(),score:+gScore.value,max:+gMax.value,w:+gW.value};if(!g.course||!g.max||!g.w)return alert("Fill in course, score, out-of and weight.");S.grades.push(g);gName.value=gScore.value=gMax.value=gW.value="";save();render()}
+function exportData(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:"application/json"}));a.download="planner-data.json";a.click()}
+async function importData(inp){const f=inp.files[0];if(!f)return;Object.assign(S,JSON.parse(await f.text()));save();render();toast("Backup restored.")}
+
+// ================= Command box + voice =================
+cmd.addEventListener("keydown",e=>{if(e.key!=="Enter")return;const q=cmd.value.trim();cmd.value="";toast(handle(q));render()});
+function handle(q){let m;
+  if(m=q.match(/slept\s+([\d.]+)\s*h(?:ours?|rs?)?(?:.*?quality\s*(\d))?/i)){S.sleep=S.sleep.filter(s=>s.date!==today());S.sleep.push({date:today(),hrs:+m[1],q:m[2]||""});save();return`Logged ${m[1]}h of sleep${m[2]?` (quality ${m[2]}/5)`:""}.${+m[1]<6?" That's on the low side, so try to rest up tonight.":""}`}
+  if(m=q.match(/^(mood|energy|symptoms?)\s*[:\-]?\s*(.+)/i)){S.health.push({ts:new Date().toISOString(),type:m[1].toLowerCase().replace(/s$/,""),text:m[2]});save();return`Noted your ${m[1].toLowerCase()}: "${esc(m[2])}".`}
+  if(m=q.match(/remind me (?:to )?(.+?)(?:\s+(?:on|by)\s+(\d{4}-\d{2}-\d{2}|today|tomorrow))?$/i)){let d=m[2]||"";if(/today/i.test(d))d=today();if(/tomorrow/i.test(d))d=addDays(today(),1);S.rem.push({text:m[1],date:d,done:false});save();return`Reminder set: "${esc(m[1])}"${d?` for ${dayName(d)}`:""}.`}
+  if(m=q.match(/^journal\s*[:\-]\s*(.+)/i)){S.journal.push({ts:new Date().toISOString(),text:m[1]});save();return"Saved to your journal. ✍️"}
+  if(m=q.match(/^add\s+(.+?)\s+(\d{4}-\d{2}-\d{2})\s+(\d{1,2}:\d{2})(?:\s*-\s*(\d{1,2}:\d{2}))?/i)){const s=m[3].padStart(5,"0");S.events.push({id:"l"+Date.now(),date:m[2],start:s,end:m[4]?m[4].padStart(5,"0"):hm(mins(s)+60),title:m[1],loc:"",kind:"",src:"local"});save();return`Added "${esc(m[1])}" on ${dayName(m[2])} at ${fmt12(s)}.${EXAM.test(m[1])?" 🚨 Flagged as an exam.":""}`}
+  if(/^add\b/i.test(q))return"I need a title, date and time, e.g. <i>add Bio quiz 2026-11-09 10:00</i>.";
+  if(m=q.match(/^(accept|decline)\s+(.+)/i)){const e=CAL.find(x=>x.rsvp&&x.title.toLowerCase().includes(m[2].toLowerCase()));if(!e)return"I couldn't find an invite with that name.";rsvp(e.id,m[1].toLowerCase()==="accept"?"accepted":"declined");return reply.innerHTML.slice(3)}
+  if(m=q.match(/^(?:did|done)\s+(.+)/i)){const h=S.habits.find(h=>h.name.toLowerCase().includes(m[1].toLowerCase()));if(!h)return`No habit called "${esc(m[1])}". Add it in the Habits tab.`;if(!h.days.includes(today()))toggleHabit(S.habits.indexOf(h));return`✅ ${esc(h.name)}: 🔥 ${streak(h)}-day streak!`}
+  if(/what'?s next|next up/i.test(q)){const c=today()+nowHM(),e=allEvents().find(e=>!e.isDue&&e.date+e.start>c);return e?`Next: <b>${esc(e.title)}</b>, ${dayName(e.date)} at ${fmt12(e.start)}${locOf(e)?` @ ${esc(locOf(e))}`:""}.`:"Nothing else on the calendar."}
+  if(/study/i.test(q)){tab("school");return"Here's your study planner ↓"}
+  if(/bed ?time|sleep tonight/i.test(q))return bedtimeHTML().replace(/<h2>.*?<\/h2>/,"");
+  if(/grade/i.test(q)){tab("school");return"Your grades are in the Canvas & School tab."}
+  if(/weather|rain|umbrella|cold|jacket/i.test(q)){tab("today");const d=S.wxCache&&S.wxCache.d;if(!d)return"Weather is still loading.";const t=wxTips(d);return`${wx(d.current.weather_code)[0]} ${Math.round(d.current.temperature_2m)}°F right now, high ${Math.round(d.daily.temperature_2m_max[0])}°. `+(t[0]||"No weather worries today.")}
+  if(/stock|market|ticker|s&p|nasdaq|dow/i.test(q)){tab("markets");return"Here are the markets ↓"}
+  if(/news|headlines/i.test(q)){tab("today");return"Headlines are at the top of the Today tab ↑"}
+  if(/summary|week/i.test(q)){tab("week");return"Here's your week ↓"}
+  if(/today|agenda|brief/i.test(q)){viewDay=today();tab("today");return"Here's today ↓"}
+  return"Sorry, I didn't catch that. Try one of the commands listed below the box.";}
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+mic.onclick=()=>{if(!SR)return toast("Voice input isn't supported in this browser. Try Chrome or Safari.");const r=new SR();r.lang="en-US";mic.classList.add("rec");
+  r.onresult=e=>{const t=e.results[0][0].transcript;cmd.value=t;toast(`Heard: "${esc(t)}"<br>`+handle(t));cmd.value="";render()};r.onend=()=>mic.classList.remove("rec");r.onerror=()=>toast("Didn't catch that. Try again.");r.start()};
+
+setInterval(()=>clock.textContent=new Date().toLocaleString([],{weekday:"long",month:"long",day:"numeric",hour:"numeric",minute:"2-digit"}),1000);
+clock.textContent=new Date().toLocaleString();
+render();refreshNW(false);setInterval(()=>refreshNW(false),30*60e3);
+</script>
+</body>
+</html>
